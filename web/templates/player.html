@@ -1,5 +1,4 @@
 <html>
-
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <meta http-equiv="Expires" content="0">
@@ -16,12 +15,11 @@
   <div class="container">
     <div class="row">
       <div class="col">
-        <input type="hidden" name="medis_svr_address" id="medis_svr_address" value="10.10.1.183:8083">
-        <input type="hidden" name="url_webrtc_client_app" id="url_webrtc_client_app" value="http://10.10.1.183:8083/static/js/app.js">
+        <input type="hidden" name="medis_svr_address" id="medis_svr_address" value="10.10.1.183:8088">
         <input name="suuid" id="suuid" value="{{ .suuid }}">
-        <button id="btn_RunPlayer" onclick="openStream($('#medis_svr_address').val(), $('#suuid').val(), videoElem);">
-          start Player</button>
-        <button id="btn_play" onclick="play_pause_video();"> play..</button>
+        <button id="btn_RunPlayer" onclick="openStream($('#medis_svr_address').val(), $('#suuid').val(), videoElem);"> start Player</button>
+        <!-- <button id="btn_LoadClientApp" onclick="LoadClientApp();"> Load Client</button> -->
+        <!-- <button id="btn_play" onclick="play_pause_video();"> play..</button> -->
         <input type="hidden" id="localSessionDescription" readonly="true">
         <input type="hidden" id="remoteSessionDescription" readonly="true">
         <div id="remoteVideos">
@@ -32,12 +30,13 @@
     </div>
   </div>
 
-  <!-- <script> 
-    {
+  <!-- <script type="text/javascript" src="../../static/js/app.js"></script> -->
+  <script>
+    function LoadClientApp() {
+      const clinent_app_addr = 'http://' + $('#medis_svr_address').val() + '/static/js/app.js';
       const script = document.createElement('script');
-      const url_webrtc_client_app = document.getElementById('url_webrtc_client_app');
-      script.src = url_webrtc_client_app;//"http://10.10.1.183:8083/static/js/app.js";
       script.type = 'text/javascript';
+      script.src = clinent_app_addr;
       script.onload = function () {
         console.log('External script loaded successfully.');
       };
@@ -46,9 +45,9 @@
       };
       document.head.appendChild(script);
     }
-  </script> -->
-  <!--<script type="text/javascript" src="http://10.10.1.183:8088/static/js/app.js"></script> -->
-  <script type="text/javascript" src="../../static/js/app.js"></script>
-</body>
 
+    LoadClientApp();
+  </script>
+
+</body>
 </html>
