@@ -1,0 +1,54 @@
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Last-Modified" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, mustrevalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <link rel="stylesheet" href="../../static/css/bootstrap.min.css">
+  <script type="text/javascript" src="../../static/js/jquery-3.4.1.min.js"></script>
+  <script src="../../static/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+  <h2 align="center"> WebRtc Stream Sample Player </h2>
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <input type="hidden" name="medis_svr_address" id="medis_svr_address" value="10.10.1.183:8083">
+        <input type="hidden" name="url_webrtc_client_app" id="url_webrtc_client_app" value="http://10.10.1.183:8083/static/js/app.js">
+        <input name="suuid" id="suuid" value="{{ .suuid }}">
+        <button id="btn_RunPlayer" onclick="openStream($('#medis_svr_address').val(), $('#suuid').val(), videoElem);">
+          start Player</button>
+        <button id="btn_play" onclick="play_pause_video();"> play..</button>
+        <input type="hidden" id="localSessionDescription" readonly="true">
+        <input type="hidden" id="remoteSessionDescription" readonly="true">
+        <div id="remoteVideos">
+          <video style="width:600px" id="videoElem" autoplay muted no_controls></video>
+        </div>
+        <div id="div"><br></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- <script> 
+    {
+      const script = document.createElement('script');
+      const url_webrtc_client_app = document.getElementById('url_webrtc_client_app');
+      script.src = url_webrtc_client_app;//"http://10.10.1.183:8083/static/js/app.js";
+      script.type = 'text/javascript';
+      script.onload = function () {
+        console.log('External script loaded successfully.');
+      };
+      script.onerror = function () {
+        console.error('Failed to load the external script.');
+      };
+      document.head.appendChild(script);
+    }
+  </script> -->
+  <!--<script type="text/javascript" src="http://10.10.1.183:8088/static/js/app.js"></script> -->
+  <script type="text/javascript" src="../../static/js/app.js"></script>
+</body>
+
+</html>
