@@ -1,13 +1,82 @@
 {
+  "http_server": {
+    "http_port": ":8088"
+  },
   "server": {
-    "http_port": ":8083",
-    "ice_servers": ["stun:stun.l.google.com:19302"]
+    "ice_servers_exam": ["stun:stun.l.google.com:19302"]
   },
   "streams": {
-    "H264_AAC": {
+    "H264_AAC_01": {
       "on_demand": false,
       "disable_audio": true,
-      "url": "rtsp://admin:admin@176.117.205.3:5541/video1"
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_02": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_03": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_04": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_05": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_06": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_07": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_08": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_09": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_10": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_11": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_12": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    }
+  },
+  "streams_exam": {
+    "cctv5_live": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "snsd_file": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
     }
   }
 }

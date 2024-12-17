@@ -27,20 +27,21 @@ func serveHTTP() {
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
 		router.GET("/", HTTPAPIServerIndex)
+		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 	}
-	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
+	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 	router.POST("/stream", HTTPAPIServerStreamWebRTC2)
 
 	router.StaticFS("/static", http.Dir("web/static"))
-	err := router.Run(Config.Server.HTTPPort)
+	err := router.Run(Config.HttpServer.HTTPPort)
 	if err != nil {
 		log.Fatalln("Start HTTP Server error", err)
 	}
 }
 
-//HTTPAPIServerIndex  index
+// index
 func HTTPAPIServerIndex(c *gin.Context) {
 	_, all := Config.list()
 	if len(all) > 0 {
@@ -48,26 +49,26 @@ func HTTPAPIServerIndex(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Redirect(http.StatusMovedPermanently, "stream/player/"+all[0])
 	} else {
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
-			"port":    Config.Server.HTTPPort,
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    Config.HttpServer.HTTPPort,
 			"version": time.Now().String(),
 		})
 	}
 }
 
-//HTTPAPIServerStreamPlayer stream player
+// stream player
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	_, all := Config.list()
 	sort.Strings(all)
-	c.HTML(http.StatusOK, "player.tmpl", gin.H{
-		"port":     Config.Server.HTTPPort,
+	c.HTML(http.StatusOK, "player.html", gin.H{
+		"port":     Config.HttpServer.HTTPPort,
 		"suuid":    c.Param("uuid"),
 		"suuidMap": all,
 		"version":  time.Now().String(),
 	})
 }
 
-//HTTPAPIServerStreamCodec stream codec
+// stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {
 	if Config.ext(c.Param("uuid")) {
 		Config.RunIFNotRun(c.Param("uuid"))
@@ -98,7 +99,7 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 	}
 }
 
-//HTTPAPIServerStreamWebRTC stream video over WebRTC
+// stream video over WebRTC
 func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	if !Config.ext(c.PostForm("suuid")) {
 		log.Println("Stream Not Found")
@@ -114,7 +115,15 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	if len(codecs) == 1 && codecs[0].Type().IsAudio() {
 		AudioOnly = true
 	}
-	muxerWebRTC := webrtc.NewMuxer(webrtc.Options{ICEServers: Config.GetICEServers(), ICEUsername: Config.GetICEUsername(), ICECredential: Config.GetICECredential(), PortMin: Config.GetWebRTCPortMin(), PortMax: Config.GetWebRTCPortMax()})
+	muxerWebRTC := webrtc.NewMuxer(
+		webrtc.Options{
+			ICEServers:    Config.GetICEServers(),
+			ICEUsername:   Config.GetICEUsername(),
+			ICECredential: Config.GetICECredential(),
+			PortMin:       Config.GetWebRTCPortMin(),
+			PortMax:       Config.GetWebRTCPortMax(),
+		},
+	)
 	answer, err := muxerWebRTC.WriteHeader(codecs, c.PostForm("data"))
 	if err != nil {
 		log.Println("WriteHeader", err)

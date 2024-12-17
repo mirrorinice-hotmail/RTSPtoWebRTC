@@ -15,20 +15,21 @@ import (
 	"github.com/deepch/vdk/av"
 )
 
-//Config global
+// Config global
 var Config = loadConfig()
 
-//ConfigST struct
+// ConfigST struct
 type ConfigST struct {
-	mutex   sync.RWMutex
-	Server  ServerST            `json:"server"`
-	Streams map[string]StreamST `json:"streams"`
-	LastError error
+	mutex      sync.RWMutex
+	HttpServer HttpServerST        `json:"http_server"`
+	Server     ServerST            `json:"server"`
+	Streams    map[string]StreamST `json:"streams"`
+	LastError  error
 }
 
-//ServerST struct
+// ServerST struct
 type ServerST struct {
-	HTTPPort      string   `json:"http_port"`
+	//	HTTPPort      string   `json:"http_port"`
 	ICEServers    []string `json:"ice_servers"`
 	ICEUsername   string   `json:"ice_username"`
 	ICECredential string   `json:"ice_credential"`
@@ -36,7 +37,12 @@ type ServerST struct {
 	WebRTCPortMax uint16   `json:"webrtc_port_max"`
 }
 
-//StreamST struct
+// Http Server struct
+type HttpServerST struct {
+	HTTPPort string `json:"http_port"`
+}
+
+// StreamST struct
 type StreamST struct {
 	URL          string `json:"url"`
 	Status       bool   `json:"status"`
@@ -123,6 +129,7 @@ func loadConfig() *ConfigST {
 			log.Fatalln(err)
 		}
 		for i, v := range tmp.Streams {
+
 			v.Cl = make(map[string]viewer)
 			tmp.Streams[i] = v
 		}
@@ -133,7 +140,7 @@ func loadConfig() *ConfigST {
 		iceServer := flag.String("ice_server", "", "ICE Server")
 		flag.Parse()
 
-		tmp.Server.HTTPPort = *addr
+		tmp.HttpServer.HTTPPort = *addr
 		tmp.Server.WebRTCPortMin = uint16(*udpMin)
 		tmp.Server.WebRTCPortMax = uint16(*udpMax)
 		if len(*iceServer) > 0 {
