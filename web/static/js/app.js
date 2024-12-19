@@ -26,88 +26,99 @@ async function play_pause_video() {
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-let config = {
+let webrtc_config = {
   // iceServers: [{
   //   urls: [webrtc_stunaddr]
   // }]
 };
-let stream = new MediaStream();
-let pc = null;
+let webrtc_stream = new MediaStream();
+let webrtc_pc = null;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 function disconnect_webrtc_peer() {
-  if (pc) {
-    stream.getTracks().forEach(track => { 
-      {
-        printToPage("close..curr track:" + track.label + "  ,   " + track.kind);
-        stream.removeTrack(track);
-        track.stop();
-      }
+  webrtc_stream.getTracks().forEach(
+    track => {
+      printToPage("close..curr track:" + track.label + "  ,   " + track.kind);
+      webrtc_stream.removeTrack(track);
+      track.stop();
     });
-    pc.close();
-    pc = null;
+
+  if (webrtc_pc) {
+    webrtc_pc.close();
+    webrtc_pc = null;
   }
 }
 
-function connect_webrtc_peer() {
-  if (pc && pc.connectionState !== "closed") {
-    printToPage("retry: notclosed return");
-    return;
+function init_webrtc_peer() {
+  
+  disconnect_webrtc_peer(); {
+    /* if (webrtc_pc) {
+      if (webrtc_pc.connectionState !== "closed") {
+        printToPage("retry: notclosed return");
+        return false;
+      }
+      return true;
+    } */
   }
+  
+  webrtc_pc = new RTCPeerConnection(webrtc_config); {
 
-  if (pc === null) {
-    pc = new RTCPeerConnection(config);
-
-    pc.oniceconnectionstatechange = (event) => {
+    webrtc_pc.oniceconnectionstatechange = (event) => {
       //console.log("-->", event);
-      printToPage("ice:" + pc.iceConnectionState);
+      printToPage("ice:" + webrtc_pc.iceConnectionState);
     };
-    pc.onicegatheringstatechange = (event) => {
+    webrtc_pc.onicegatheringstatechange = (event) => {
       //console.log("-->", event);
-      printToPage("ice_: " + pc.iceGatheringState);
+      printToPage("ice_: " + webrtc_pc.iceGatheringState);
     };
-    pc.onsignalingstatechange = (event) => {
+    webrtc_pc.onsignalingstatechange = (event) => {
       //console.log("-->", event);
-      printToPage("signal: " + pc.signalingState);
+      printToPage("signal: " + webrtc_pc.signalingState);
     };
-    pc.ondatachannel = (event) => {
+    webrtc_pc.ondatachannel = (event) => {
       console.log("-->", event);
     };
-    pc.onpeeridentity = (event) => {
+    webrtc_pc.onpeeridentity = (event) => {
       printToPage("Peer identity: " + event.assertion);
     };
-    pc.onconnectionstatechange = (event) => {
+    webrtc_pc.onconnectionstatechange = (event) => {
       //console.log("-->", event);
-      printToPage(pc.connectionState);
-      if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
+      printToPage(webrtc_pc.connectionState);
+      if (webrtc_pc.connectionState === "disconnected" || webrtc_pc.connectionState === "failed") {
         printToPage("retry");
         startWebrtcPlayer();
       }
-      //else if (pc.connectionState === "connected") {
+      //else if (webrtc_pc.connectionState === "connected") {
       //play_pause_video();
       //}
     };
 
-    pc.onnegotiationneeded = async function (event) {
-      console.log("-->", event);
-      let offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      getRemoteSdp();
-    };
+  } //end of RTCPeerConnection
 
-    pc.ontrack = (event) => {
-      console.log("-->", event);
-      stream.getTracks().forEach(track => { 
-          printToPage("ontrack-> remove old track:" + track.label + "  ,   " + track.kind);
-          stream.removeTrack(track);
-          track.stop();
-      });
-      stream.addTrack(event.track);
-      if(!video_box.srcObject) video_box.srcObject = stream;
-      printToPage(event.streams.length + "byte(s) delivered");
-    };
-  }
+  return true;
+}
 
+
+function connect_webrtc_peer() {
+  webrtc_pc.onnegotiationneeded = async function (event) {
+    console.log("-->", event);
+    let offer = await webrtc_pc.createOffer();
+    await webrtc_pc.setLocalDescription(offer);
+    getRemoteSdp();
+  };
+
+  webrtc_pc.ontrack = (event) => {
+    console.log("-->", event);
+    webrtc_stream.getTracks().forEach(track => { 
+        printToPage("ontrack-> remove old track:" + track.label + "  ,   " + track.kind);
+        webrtc_stream.removeTrack(track); //??PYM_TEST_00000 audio track 까지 추가 될 경우 ontrack 이벤트가 2번 발생함으로 새로운 다른 track까지 지워지는 문제가 있음
+        track.stop();
+    });
+    webrtc_stream.addTrack(event.track);
+    printToPage(event.streams.length + "byte(s) delivered");
+  };
+
+  getCodecInfo();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,44 +131,37 @@ $(document).ready(function () {
 
 function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
 
-  //??PYM_TEST_00000 setInterval(startWebrtcPlayer, 1000 * 3600);
- // printToPage("____________________1min ");
+  //??PYM_TEST_00000 setInterval(startWebrtcPlayer, 1000 * 3600); printToPage("____________________1hour ");
 
-  if (in_webrtc_svraddr) {
-    webrtc_svraddr = in_webrtc_svraddr;
-  }
+  webrtc_svraddr = in_webrtc_svraddr;
   if (!webrtc_svraddr) {
     printToPage("no media server address");
     return;
   }
 
-  if (in_suuid) {
-    webrtc_source_id = in_suuid;
-  }
+  webrtc_source_id = in_suuid;
   if (!webrtc_source_id) {
     printToPage("no uuid");
     return;
   }
 
-  if (in_videoElem) {
-    video_box = in_videoElem;
-  }
+  video_box = in_videoElem;
   if (!video_box) {
     printToPage("no videoElem");
     return;
   }
+  if(!video_box.srcObject) video_box.srcObject = webrtc_stream;
 
-  startWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem);
+  startWebrtcPlayer();
 
 }
 
-async function startWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
+async function startWebrtcPlayer( ) {
   printToPage("----- startWebrtcPlayer() ----- ");
   printToPage("://" + webrtc_svraddr + " / " + webrtc_source_id);
 
-  disconnect_webrtc_peer();
+  init_webrtc_peer();
   connect_webrtc_peer();
-  getCodecInfo();
 }
 
 
@@ -173,9 +177,9 @@ function getCodecInfo() {  //get /stream/codec/id
       finally {
         $.each(data
           , function (index, value) { 
-            pc.getTransceivers().forEach((transceiver, index) => { transceiver.stop(); });
-            pc.addTransceiver(value.Type, { 'direction': 'sendrecv' }) 
-            pc.getTransceivers().forEach((transceiver, index) => { printToPage(`Transceiver ${index + 1}:`, transceiver); });//??PYM_TEST_00000
+            webrtc_pc.getTransceivers().forEach((transceiver, index) => { transceiver.stop(); });
+            webrtc_pc.addTransceiver(value.Type, { 'direction': 'sendrecv' }) 
+            webrtc_pc.getTransceivers().forEach((transceiver, index) => { printToPage(`Transceiver ${index + 1}:`, transceiver); });//??PYM_TEST_00000
           }
         )
       }
@@ -187,10 +191,10 @@ function getRemoteSdp() { //post /stream/receiver/id
   //console.log("getRemoteSdp()...");
   printToPage("post /stream/receiver/");
   $.post(webrtc_urlscheme + webrtc_svraddr + webrtc_api_set_remotesdp + webrtc_source_id
-    , { suuid: webrtc_source_id, data: btoa(pc.localDescription.sdp) }
+    , { suuid: webrtc_source_id, data: btoa(webrtc_pc.localDescription.sdp) }
     , function (data) {
       printToPage("resp received: post /stream/receiver/");
-      try { pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: atob(data) })) }
+      try { webrtc_pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: atob(data) })) }
       catch (e) { console.warn(e); }
     }
   );
