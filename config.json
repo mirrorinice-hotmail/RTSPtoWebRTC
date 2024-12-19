@@ -1,6 +1,6 @@
 {
   "http_server": {
-    "http_port": ":8088"
+    "http_port": ":8083"
   },
   "server": {
     "ice_servers_exam": ["stun:stun.l.google.com:19302"]

@@ -39,7 +39,7 @@ function disconnect_webrtc_peer() {
   if (pc) {
     stream.getTracks().forEach(track => { 
       {
-        printToPage("curr track:" + track.label + "  ,   " + track.kind);
+        printToPage("close..curr track:" + track.label + "  ,   " + track.kind);
         stream.removeTrack(track);
         track.stop();
       }
@@ -81,7 +81,7 @@ function connect_webrtc_peer() {
       printToPage(pc.connectionState);
       if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
         printToPage("retry");
-        myGoStream();
+        startWebrtcPlayer();
       }
       //else if (pc.connectionState === "connected") {
       //play_pause_video();
@@ -98,7 +98,7 @@ function connect_webrtc_peer() {
     pc.ontrack = (event) => {
       console.log("-->", event);
       stream.getTracks().forEach(track => { 
-          printToPage("curr track:" + track.label + "  ,   " + track.kind);
+          printToPage("ontrack-> remove old track:" + track.label + "  ,   " + track.kind);
           stream.removeTrack(track);
           track.stop();
       });
@@ -115,12 +115,12 @@ $(document).ready(function () {
   console.log('---start----');
   printToPage("ready addclass");
   //$('#suuid').addClass('active');
-  //myGoStream();
+  //openWebrtcPlayer
 });
 
-function openStream(in_webrtc_svraddr, in_suuid, in_videoElem) {
+function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
 
-  //??PYM_TEST_00000 setInterval(myGoStream, 1000 * 3600);
+  //??PYM_TEST_00000 setInterval(startWebrtcPlayer, 1000 * 3600);
  // printToPage("____________________1min ");
 
   if (in_webrtc_svraddr) {
@@ -147,13 +147,13 @@ function openStream(in_webrtc_svraddr, in_suuid, in_videoElem) {
     return;
   }
 
-  myGoStream(in_webrtc_svraddr, in_suuid, in_videoElem);
+  startWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem);
 
 }
 
-async function myGoStream(in_webrtc_svraddr, in_suuid, in_videoElem) {
-  printToPage("-----------myGoStream()...10.10.1.183-------- ");
-  printToPage("server:" + webrtc_svraddr + ", id:" + webrtc_source_id);
+async function startWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
+  printToPage("----- startWebrtcPlayer() ----- ");
+  printToPage("://" + webrtc_svraddr + " / " + webrtc_source_id);
 
   disconnect_webrtc_peer();
   connect_webrtc_peer();
@@ -163,16 +163,17 @@ async function myGoStream(in_webrtc_svraddr, in_suuid, in_videoElem) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 function getCodecInfo() {  //get /stream/codec/id
-  console.log("getCodecInfo()...");
+  //console.log("getCodecInfo()...");
+  printToPage("get /stream/codec/");
   $.get(webrtc_urlscheme + webrtc_svraddr + webrtc_api_get_codec + webrtc_source_id
     , function (data) {
+      printToPage("resp received: get /stream/codec/");
       try { data = JSON.parse(data); }
       catch (e) { console.log(e); }
       finally {
         $.each(data
           , function (index, value) { 
-            transceivers = pc.getTransceivers(); //??PYM_TEST_00000
-            transceivers.forEach((transceiver, index) => { transceiver.stop(); });
+            pc.getTransceivers().forEach((transceiver, index) => { transceiver.stop(); });
             pc.addTransceiver(value.Type, { 'direction': 'sendrecv' }) 
             pc.getTransceivers().forEach((transceiver, index) => { printToPage(`Transceiver ${index + 1}:`, transceiver); });//??PYM_TEST_00000
           }
@@ -183,10 +184,12 @@ function getCodecInfo() {  //get /stream/codec/id
 }
 
 function getRemoteSdp() { //post /stream/receiver/id
-  console.log("getRemoteSdp()...");
+  //console.log("getRemoteSdp()...");
+  printToPage("post /stream/receiver/");
   $.post(webrtc_urlscheme + webrtc_svraddr + webrtc_api_set_remotesdp + webrtc_source_id
     , { suuid: webrtc_source_id, data: btoa(pc.localDescription.sdp) }
     , function (data) {
+      printToPage("resp received: post /stream/receiver/");
       try { pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: atob(data) })) }
       catch (e) { console.warn(e); }
     }

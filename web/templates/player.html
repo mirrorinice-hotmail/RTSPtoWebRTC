@@ -15,10 +15,9 @@
   <div class="container">
     <div class="row">
       <div class="col">
-        <input type="hidden" name="medis_svr_address" id="medis_svr_address" value="10.10.1.183:8088">
+        <input type="hidden" name="medis_svr_address" id="medis_svr_address" value="10.10.1.183:8083">
         <input name="suuid" id="suuid" value="{{ .suuid }}">
-        <button id="btn_RunPlayer" onclick="openStream($('#medis_svr_address').val(), $('#suuid').val(), videoElem);"> start Player</button>
-        <!-- <button id="btn_LoadClientApp" onclick="LoadClientApp();"> Load Client</button> -->
+        <button id="btn_RunPlayer" onclick="openWebrtcPlayer($('#medis_svr_address').val(), $('#suuid').val(), videoElem);"> start Player</button>
         <!-- <button id="btn_play" onclick="play_pause_video();"> play..</button> -->
         <input type="hidden" id="localSessionDescription" readonly="true">
         <input type="hidden" id="remoteSessionDescription" readonly="true">
