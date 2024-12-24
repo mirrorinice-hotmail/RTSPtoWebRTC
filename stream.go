@@ -15,14 +15,19 @@ var (
 )
 
 func serveStreams() {
-	for k, v := range Config.Streams {
-		if !v.OnDemand {
-			go RTSPWorkerLoop(k, v.URL, v.OnDemand, v.DisableAudio, v.Debug)
+	/*
+		for k, v := range Config.Streams {
+			if !v.OnDemand {
+				go RTSPWorkerLoop(k, v.URL, v.OnDemand, v.DisableAudio, v.Debug)
+			}
 		}
-	}
+		/*/
+	Config.RunAllStream()
+	//*/
+	log.Println("serverStream Started")
 }
 func RTSPWorkerLoop(name, url string, OnDemand, DisableAudio, Debug bool) {
-	defer Config.RunUnlock(name)
+	defer Config.Runlock(name, false)
 	for {
 		log.Println("Stream Try Connect", name)
 		err := RTSPWorker(name, url, OnDemand, DisableAudio, Debug)

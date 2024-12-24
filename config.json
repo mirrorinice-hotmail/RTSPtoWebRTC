@@ -65,6 +65,66 @@
       "on_demand": false,
       "disable_audio": true,
       "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_13": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_14": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_15": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_16": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_17": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_18": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_19": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_20": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_21": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_22": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_23": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+    },
+    "H264_AAC_24": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
     }
   },
   "streams_exam": {
@@ -74,6 +134,126 @@
       "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
     },
     "snsd_file": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_25": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_26": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_27": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_28": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_29": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_30": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_31": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_32": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_33": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_34": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_35": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_36": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_37": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_38": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_39": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_40": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_41": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_42": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_43": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_44": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_45": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_46": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_47": {
+      "on_demand": false,
+      "disable_audio": true,
+      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+    },
+    "H264_AAC_48": {
       "on_demand": false,
       "disable_audio": true,
       "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -58,27 +58,61 @@ type viewer struct {
 	c chan av.Packet
 }
 
+func (element *ConfigST) RunAllStream() {
+	element.mutex.Lock()
+	defer element.mutex.Unlock()
+	for iUuid, iStream := range element.Streams {
+		if iStream.RunLock {
+			continue
+		}
+		iStream.RunLock = true
+		element.Streams[iUuid] = iStream
+		log.Println("RunStream of all", iUuid)
+		go RTSPWorkerLoop(iUuid, iStream.URL, iStream.OnDemand, iStream.DisableAudio, iStream.Debug)
+	}
+}
+
 func (element *ConfigST) RunIFNotRun(uuid string) {
 	element.mutex.Lock()
 	defer element.mutex.Unlock()
-	if tmp, ok := element.Streams[uuid]; ok {
-		if tmp.OnDemand && !tmp.RunLock {
-			tmp.RunLock = true
-			element.Streams[uuid] = tmp
-			go RTSPWorkerLoop(uuid, tmp.URL, tmp.OnDemand, tmp.DisableAudio, tmp.Debug)
+	if iStream, ok := element.Streams[uuid]; ok {
+		if iStream.OnDemand && !iStream.RunLock {
+			log.Println("RunIFNotRun", uuid)
+			iStream.RunLock = true
+			element.Streams[uuid] = iStream
+			go RTSPWorkerLoop(uuid, iStream.URL, iStream.OnDemand, iStream.DisableAudio, iStream.Debug)
 		}
 	}
 }
 
-func (element *ConfigST) RunUnlock(uuid string) {
+func (element *ConfigST) RunStream(uuid string) {
 	element.mutex.Lock()
 	defer element.mutex.Unlock()
-	if tmp, ok := element.Streams[uuid]; ok {
-		if tmp.OnDemand && tmp.RunLock {
-			tmp.RunLock = false
-			element.Streams[uuid] = tmp
-		}
+	iStream, ok := element.Streams[uuid]
+	if !ok || iStream.RunLock {
+		return
 	}
+
+	log.Println("RunStream", uuid)
+	iStream.RunLock = true
+	element.Streams[uuid] = iStream
+	go RTSPWorkerLoop(uuid, iStream.URL, iStream.OnDemand, iStream.DisableAudio, iStream.Debug)
+
+}
+
+func (element *ConfigST) Runlock(uuid string, onOff bool) {
+	element.mutex.Lock()
+	defer element.mutex.Unlock()
+	iStream, ok := element.Streams[uuid]
+	if !ok || iStream.RunLock {
+		return
+	}
+
+	if iStream.RunLock {
+		iStream.RunLock = onOff
+		element.Streams[uuid] = iStream
+	}
+
 }
 
 func (element *ConfigST) HasViewer(uuid string) bool {
@@ -122,7 +156,7 @@ func (element *ConfigST) GetWebRTCPortMax() uint16 {
 
 func loadConfig() *ConfigST {
 	var tmp ConfigST
-	data, err := ioutil.ReadFile("config.json")
+	data, err := os.ReadFile("config.json")
 	if err == nil {
 		err = json.Unmarshal(data, &tmp)
 		if err != nil {

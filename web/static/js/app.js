@@ -36,12 +36,17 @@ let webrtc_pc = null;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 function disconnect_webrtc_peer() {
+  if(webrtc_stream) {
   webrtc_stream.getTracks().forEach(
     track => {
       printToPage("close..curr track:" + track.label + "  ,   " + track.kind);
       webrtc_stream.removeTrack(track);
       track.stop();
     });
+  }
+  else {
+    webrtc_stream = new MediaStream();
+  }
 
   if (webrtc_pc) {
     webrtc_pc.close();
@@ -51,7 +56,8 @@ function disconnect_webrtc_peer() {
 
 function init_webrtc_peer() {
   
-  disconnect_webrtc_peer(); {
+  disconnect_webrtc_peer(); 
+  {
     /* if (webrtc_pc) {
       if (webrtc_pc.connectionState !== "closed") {
         printToPage("retry: notclosed return");
@@ -61,7 +67,8 @@ function init_webrtc_peer() {
     } */
   }
   
-  webrtc_pc = new RTCPeerConnection(webrtc_config); {
+  webrtc_pc = new RTCPeerConnection(webrtc_config); 
+  {
 
     webrtc_pc.oniceconnectionstatechange = (event) => {
       //console.log("-->", event);
@@ -70,10 +77,6 @@ function init_webrtc_peer() {
     webrtc_pc.onicegatheringstatechange = (event) => {
       //console.log("-->", event);
       printToPage("ice_: " + webrtc_pc.iceGatheringState);
-    };
-    webrtc_pc.onsignalingstatechange = (event) => {
-      //console.log("-->", event);
-      printToPage("signal: " + webrtc_pc.signalingState);
     };
     webrtc_pc.ondatachannel = (event) => {
       console.log("-->", event);
@@ -107,6 +110,11 @@ function connect_webrtc_peer() {
     getRemoteSdp();
   };
 
+  webrtc_pc.onsignalingstatechange = (event) => {
+    //console.log("-->", event);
+    printToPage("signal: " + webrtc_pc.signalingState);
+  };
+  
   webrtc_pc.ontrack = (event) => {
     console.log("-->", event);
     webrtc_stream.getTracks().forEach(track => { 
@@ -124,9 +132,9 @@ function connect_webrtc_peer() {
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 $(document).ready(function () {
   console.log('---start----');
-  printToPage("ready addclass");
+  printToPage("ready addclass 01");
   //$('#suuid').addClass('active');
-  //openWebrtcPlayer
+  openWebrtcPlayer($('#medis_svr_address').val(), $('#suuid').val(), videoElem);
 });
 
 function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
