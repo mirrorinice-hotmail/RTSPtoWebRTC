@@ -124,7 +124,7 @@
     "H264_AAC_24": {
       "on_demand": false,
       "disable_audio": true,
-      "url": "rtsp://10.10.0.30:1935/vod/FHD_1.mp4"
+      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
     }
   },
   "streams_exam": {
