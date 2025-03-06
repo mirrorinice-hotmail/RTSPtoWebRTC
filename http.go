@@ -31,6 +31,7 @@ func serveHTTP() {
 		router.GET("/", HTTPAPIServerIndex)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
+		router.GET("/stream/listupdate", HTTPAPIServerStreamUpdateList)
 	}
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
@@ -40,15 +41,17 @@ func serveHTTP() {
 	log.Println("ServerHTTP start")
 	//*
 	serverHttp = &http.Server{
-		Addr:    Config.HttpServer.HTTPPort,
+		Addr:    gConfig.HttpServer.HTTPPort,
 		Handler: router,
 	}
+	log.Println("ServerHTTP ListenAndServe")
 	err := serverHttp.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatalf("ServerHTTP listen: %s\n", err)
 	}
 	/*/
-	err := router.Run(Config.HttpServer.HTTPPort)
+	log.Println("ServerHTTP router run")
+	err := router.Run(gConfig.HttpServer.HTTPPort)
 	if err != nil {
 		log.Fatalln("Start HTTP Server error", err)
 	}
@@ -59,14 +62,14 @@ func serveHTTP() {
 
 // index
 func HTTPAPIServerIndex(c *gin.Context) {
-	_, all := Config.list()
+	_, all := gStreamListInfo.list()
 	if len(all) > 0 {
 		c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Redirect(http.StatusMovedPermanently, "stream/player/"+all[0])
 	} else {
 		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    Config.HttpServer.HTTPPort,
+			"port":    gConfig.HttpServer.HTTPPort,
 			"version": time.Now().String(),
 		})
 	}
@@ -74,21 +77,26 @@ func HTTPAPIServerIndex(c *gin.Context) {
 
 // stream player
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
-	_, all := Config.list()
+	_, all := gStreamListInfo.list()
 	sort.Strings(all)
 	c.HTML(http.StatusOK, "player.html", gin.H{
-		"port":     Config.HttpServer.HTTPPort,
+		"port":     gConfig.HttpServer.HTTPPort,
 		"suuid":    c.Param("uuid"),
 		"suuidMap": all,
 		"version":  time.Now().String(),
 	})
 }
 
+func HTTPAPIServerStreamUpdateList(c *gin.Context) {
+	cctvlist_mgr_updatelist()
+}
+
 // stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {
-	if Config.ext(c.Param("uuid")) {
-		Config.RunStream(c.Param("uud")) //Config.RunIFNotRun(c.Param("uuid"))
-		codecs := Config.coGe(c.Param("uuid"))
+	strSuuid := c.Param("uuid")
+	if gStreamListInfo.ext(strSuuid) {
+		gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
+		codecs := gStreamListInfo.coGe(strSuuid)
 		if codecs == nil {
 			return
 		}
@@ -117,12 +125,13 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 
 // stream video over WebRTC
 func HTTPAPIServerStreamWebRTC(c *gin.Context) {
-	if !Config.ext(c.PostForm("suuid")) {
+	strSuuid := c.PostForm("suuid")
+	if !gStreamListInfo.ext(strSuuid) {
 		log.Println("Stream Not Found")
 		return
 	}
-	Config.RunStream(c.PostForm("suuid")) //Config.RunIFNotRun(c.PostForm("suuid"))
-	codecs := Config.coGe(c.PostForm("suuid"))
+	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
+	codecs := gStreamListInfo.coGe(strSuuid)
 	if codecs == nil {
 		log.Println("Stream Codec Not Found")
 		return
@@ -133,11 +142,11 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	}
 	muxerWebRTC := webrtc.NewMuxer(
 		webrtc.Options{
-			ICEServers:    Config.GetICEServers(),
-			ICEUsername:   Config.GetICEUsername(),
-			ICECredential: Config.GetICECredential(),
-			PortMin:       Config.GetWebRTCPortMin(),
-			PortMax:       Config.GetWebRTCPortMax(),
+			ICEServers:    gConfig.GetICEServers(),
+			ICEUsername:   gConfig.GetICEUsername(),
+			ICECredential: gConfig.GetICECredential(),
+			PortMin:       gConfig.GetWebRTCPortMin(),
+			PortMax:       gConfig.GetWebRTCPortMax(),
 		},
 	)
 	answer, err := muxerWebRTC.WriteHeader(codecs, c.PostForm("data"))
@@ -151,8 +160,9 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		return
 	}
 	go func() {
-		cid, ch := Config.clAd(c.PostForm("suuid"))
-		defer Config.clDe(c.PostForm("suuid"), cid)
+		strSuuid := c.PostForm("suuid")
+		cid, ch := gStreamListInfo.clAd(strSuuid)
+		defer gStreamListInfo.clDe(strSuuid, cid)
 		defer muxerWebRTC.Close()
 		var videoStart bool
 		noVideo := time.NewTimer(10 * time.Second)

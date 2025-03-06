@@ -10,8 +10,14 @@ import (
 )
 
 func main() {
+	gConfig.loadConfig()
+	gStreamListInfo.Streams = &(gConfig.Streams)
+
+	cctvlist_mgr_done_sig := make(chan struct{}, 1)
+	go cctvlist_mgr(cctvlist_mgr_done_sig)
 	go serveHTTP()
 	go serveStreams()
+
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -25,6 +31,10 @@ func main() {
 			if err := serverHttp.Shutdown(ctx); err != nil {
 				log.Fatal("Server forced to shutdown:", err)
 			}
+		}
+		{
+			cctvlist_mgr_stop()
+			<-cctvlist_mgr_done_sig
 		}
 		done <- true
 	}()
