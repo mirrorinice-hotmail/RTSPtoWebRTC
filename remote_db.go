@@ -71,40 +71,15 @@ func update_stream_list() {
 		panic(err)
 	}
 	defer rows.Close()
-
-	gStreamListInfo.update_list(rows)
-	/*
-		//gStreamListInfo.
+	// /*
+	newStreams := makeTemporalStreams(rows)
+	gStreamListInfo.apply_to_list(newStreams)
+	/*/
 		for rows.Next() {
-			gStreamListInfo.mutex.Lock()
-			defer gStreamListInfo.mutex.Unlock()
-			var val_stream_id, val_rtsp_01, val_rtsp_02, val_cctv_nm string
-			err := rows.Scan(&val_stream_id, &val_rtsp_01, &val_rtsp_02, &val_cctv_nm)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Printf("stream list: stream_id(%s), rtsp_01(%s), rtsp_02(%s) , cctv_nm(%s)\n",
-				val_stream_id, val_rtsp_01, val_rtsp_02, val_cctv_nm)
-
-			if tmpStream, ok := (*gStreamListInfo.Streams)[val_stream_id]; ok {
-				tmpStream.URL = val_rtsp_01
-				(*gStreamListInfo.Streams)[val_stream_id] = tmpStream
-			} else {
-				tmpStream := StreamST{
-					Uuid:         val_stream_id,
-					URL:          val_rtsp_01,
-					Status:       false,
-					OnDemand:     false,
-					DisableAudio: true,
-					Debug:        false,
-					RunLock:      false,
-					Codecs:       nil,
-					Cl:           make(map[string]avQueue)}
-				(*gStreamListInfo.Streams)[val_stream_id] = tmpStream
-			}
+			gStreamListInfo.update_list(rows)
 		}
-	*/
-
+	//	*/
+	gConfig.SaveConfig() //??PYM_TEST_00000
 }
 
 func db_add(db *sql.DB, in_no string) bool {
@@ -236,31 +211,33 @@ func db_result_print(err error, in_queryaction string) bool {
 }
 
 // ///////////////////////////////////////////////////////////////////////////////
-var cctvlist_mgr_comm_sig = make(chan int, 1)
+var cctvlist_mgr_comm_sig = make(chan int, 10)
+var cctvlist_mgr_done_sig = make(chan struct{}, 1)
 
-func cctvlist_mgr_stop() {
+func cctvlist_mgr_stop_and_wait() {
 	cctvlist_mgr_comm_sig <- CCTVLISTMGR_END
+	<-cctvlist_mgr_done_sig
 }
 
 func cctvlist_mgr_updatelist() {
 	cctvlist_mgr_comm_sig <- CCTVLISTMGR_UPDATE
 }
 
-func cctvlist_mgr(done_sig chan<- struct{}) (ot_result int) {
+func cctvlist_mgr_start() (ot_result int) {
 	const name = "cctvlist_mgr"
-	log.Println(name, ": cctvlist_mgr start")
+	log.Println(name, ": Started")
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(name, ": recovered from panic:", r)
 		}
-		log.Println(name, ": stopped")
-	}()
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println(name, ": recovered from panic: 'done_sig'", r)
+			}
+			log.Println(name, ": stopped")
+		}()
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println(name, ": recovered from panic:", r)
-		}
-		done_sig <- struct{}{} //??PYM_TEST_00000
+		cctvlist_mgr_done_sig <- struct{}{}
 	}()
 
 	cont := true
@@ -275,6 +252,5 @@ func cctvlist_mgr(done_sig chan<- struct{}) (ot_result int) {
 		}
 	}
 
-	done_sig <- struct{}{}
 	return 0
 }

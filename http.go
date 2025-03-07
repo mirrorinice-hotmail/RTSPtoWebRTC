@@ -31,7 +31,7 @@ func serveHTTP() {
 		router.GET("/", HTTPAPIServerIndex)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
-		router.GET("/stream/listupdate", HTTPAPIServerStreamUpdateList)
+		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
 	}
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
@@ -87,8 +87,16 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	})
 }
 
+// Message resp struct
+type Message struct {
+	//Status int `json:"status"`
+	//Payload interface{} `json:"payload"`
+}
+
 func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 	cctvlist_mgr_updatelist()
+
+	c.IndentedJSON(200, Message{})
 }
 
 // stream codec

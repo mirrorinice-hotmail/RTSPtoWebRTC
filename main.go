@@ -10,11 +10,11 @@ import (
 )
 
 func main() {
+	log.Println("--Start--")
 	gConfig.loadConfig()
 	gStreamListInfo.Streams = &(gConfig.Streams)
 
-	cctvlist_mgr_done_sig := make(chan struct{}, 1)
-	go cctvlist_mgr(cctvlist_mgr_done_sig)
+	go cctvlist_mgr_start()
 	go serveHTTP()
 	go serveStreams()
 
@@ -32,13 +32,11 @@ func main() {
 				log.Fatal("Server forced to shutdown:", err)
 			}
 		}
-		{
-			cctvlist_mgr_stop()
-			<-cctvlist_mgr_done_sig
-		}
+		cctvlist_mgr_stop_and_wait()
+		////////////////////
 		done <- true
 	}()
-	log.Println("Server Start Awaiting Signal")
+	log.Println("Awaiting End Signal")
 	<-done
-	log.Println("Exiting")
+	log.Println("--End--")
 }

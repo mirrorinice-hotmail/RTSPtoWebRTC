@@ -3,13 +3,27 @@
     "http_port": ":8083"
   },
   "server": {
+    "ice_credential": "",
+    "ice_servers": [],
+    "ice_username": "",
+    "webrtc_port_max": 7109,
+    "webrtc_port_min": 7101,
     "ice_servers_exam": ["stun:stun.l.google.com:19302"]
   },
   "streams": {
-    "cctv002": {
-      "on_demand": false,
+    "cctv001": {
+      "debug": false,
       "disable_audio": true,
+      "on_demand": false,
+      "status": false,
       "url": "rtsp://210.99.70.120:1935/live/cctv001.stream"
+    },
+    "cctv003": {
+      "debug": false,
+      "disable_audio": true,
+      "on_demand": false,
+      "status": false,
+      "url": "rtsp://???/live/cctv001.stream"
     }
   },
   "streams_extra": {

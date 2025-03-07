@@ -20,10 +20,10 @@ var gConfig ConfigST
 // ConfigST struct
 type ConfigST struct {
 	mutex         sync.RWMutex
-	HttpServer    HttpServerST        `json:"http_server" groups:"config"`
-	Server        ServerST            `json:"server" groups:"config"`
-	Streams       map[string]StreamST `json:"streams" groups:"config"`
-	Streams_extra map[string]StreamST `json:"streams_extra" groups:"config"`
+	HttpServer    HttpServerST `json:"http_server" groups:"config"`
+	Server        ServerST     `json:"server" groups:"config"`
+	Streams       StreamsMAP   `json:"streams" groups:"config"`
+	Streams_extra StreamsMAP   `json:"streams_extra" groups:"config"`
 	LastError     error
 }
 
@@ -79,7 +79,7 @@ func (cfg *ConfigST) loadConfig() {
 			log.Fatalln(err)
 		}
 		for iUuid, tmpStream := range cfg.Streams {
-			tmpStream.Cl = make(map[string]avQueue)
+			tmpStream.Cl = make(AvqueueMAP)
 			tmpStream.Uuid = iUuid
 			cfg.Streams[iUuid] = tmpStream
 		}
@@ -97,7 +97,7 @@ func (cfg *ConfigST) loadConfig() {
 			cfg.Server.ICEServers = []string{*iceServer}
 		}
 
-		cfg.Streams = make(map[string]StreamST)
+		cfg.Streams = make(StreamsMAP)
 	}
 }
 
