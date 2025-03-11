@@ -28,7 +28,8 @@ func serveHTTP() {
 
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
-		router.GET("/", HTTPAPIServerIndex)
+		router.GET("/", HTTPAPIStreamList)
+		router.GET("/stream/list", HTTPAPIStreamList)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
@@ -75,13 +76,40 @@ func HTTPAPIServerIndex(c *gin.Context) {
 	}
 }
 
+// list
+func HTTPAPIStreamList(c *gin.Context) {
+	_, all := gStreamListInfo.list()
+	if len(all) > 0 {
+		c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
+		c.Header("Access-Control-Allow-Origin", "*")
+	}
+
+	pagename := "stream_list"
+	c.HTML(http.StatusOK, pagename+".html", gin.H{
+		"port":    gConfig.HttpServer.HTTPPort,
+		"streams": gStreamListInfo.Streams,
+		"version": time.Now().String(),
+		"page":    pagename,
+	})
+}
+
 // stream player
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
+	strSuuid := c.Param("uuid")
+	if !gStreamListInfo.ext(strSuuid) {
+		log.Println("Stream Not Found")
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    gConfig.HttpServer.HTTPPort,
+			"version": time.Now().String(),
+		})
+		return
+	}
 	_, all := gStreamListInfo.list()
 	sort.Strings(all)
+
 	c.HTML(http.StatusOK, "player.html", gin.H{
 		"port":     gConfig.HttpServer.HTTPPort,
-		"suuid":    c.Param("uuid"),
+		"suuid":    strSuuid, //??PYM_TEST_00000 c.Param("uuid"),
 		"suuidMap": all,
 		"version":  time.Now().String(),
 	})
@@ -94,39 +122,44 @@ type Message struct {
 }
 
 func HTTPAPIServerStreamUpdateList(c *gin.Context) {
-	cctvlist_mgr_updatelist()
-
+	gCctvListMgr.request_updatelist()
 	c.IndentedJSON(200, Message{})
 }
 
 // stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {
 	strSuuid := c.Param("uuid")
-	if gStreamListInfo.ext(strSuuid) {
-		gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
-		codecs := gStreamListInfo.coGe(strSuuid)
-		if codecs == nil {
+	if !gStreamListInfo.ext(strSuuid) {
+		log.Println("Stream Not Found")
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    gConfig.HttpServer.HTTPPort,
+			"version": time.Now().String(),
+		})
+		return
+	}
+	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
+	codecs := gStreamListInfo.coGe(strSuuid)
+	if codecs == nil {
+		return
+	}
+	var tmpCodec []JCodec
+	for _, codec := range codecs {
+		if codec.Type() != av.H264 && codec.Type() != av.PCM_ALAW && codec.Type() != av.PCM_MULAW && codec.Type() != av.OPUS {
+			log.Println("Codec Not Supported WebRTC ignore this track", codec.Type())
+			continue
+		}
+		if codec.Type().IsVideo() {
+			tmpCodec = append(tmpCodec, JCodec{Type: "video"})
+		} else {
+			tmpCodec = append(tmpCodec, JCodec{Type: "audio"})
+		}
+	}
+	b, err := json.Marshal(tmpCodec)
+	if err == nil {
+		_, err = c.Writer.Write(b)
+		if err != nil {
+			log.Println("Write Codec Info error", err)
 			return
-		}
-		var tmpCodec []JCodec
-		for _, codec := range codecs {
-			if codec.Type() != av.H264 && codec.Type() != av.PCM_ALAW && codec.Type() != av.PCM_MULAW && codec.Type() != av.OPUS {
-				log.Println("Codec Not Supported WebRTC ignore this track", codec.Type())
-				continue
-			}
-			if codec.Type().IsVideo() {
-				tmpCodec = append(tmpCodec, JCodec{Type: "video"})
-			} else {
-				tmpCodec = append(tmpCodec, JCodec{Type: "audio"})
-			}
-		}
-		b, err := json.Marshal(tmpCodec)
-		if err == nil {
-			_, err = c.Writer.Write(b)
-			if err != nil {
-				log.Println("Write Codec Info error", err)
-				return
-			}
 		}
 	}
 }
@@ -136,6 +169,10 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	strSuuid := c.PostForm("suuid")
 	if !gStreamListInfo.ext(strSuuid) {
 		log.Println("Stream Not Found")
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    gConfig.HttpServer.HTTPPort,
+			"version": time.Now().String(),
+		})
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)

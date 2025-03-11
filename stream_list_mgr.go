@@ -48,6 +48,10 @@ func serveStreams() {
 	log.Println("serverStream Started")
 }
 
+func (obj *StreamListInfoST) init(stream *StreamsMAP) {
+	obj.Streams = stream
+}
+
 func (obj *StreamListInfoST) RunAllStream() {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
@@ -257,10 +261,11 @@ func (obj *StreamListInfoST) update_list(rows *sql.Rows) {
 	}
 }
 
-func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) {
+func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 
+	isListChanged := false
 	var streamToDelete []string //group of iSuuid
 
 	//same suuid -> check
@@ -269,6 +274,9 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) {
 			if oldStream.URL != newStream.URL { //different -> change
 				oldStream.URL = newStream.URL
 				(*obj.Streams)[iSuuid] = oldStream
+				if !isListChanged {
+					isListChanged = true
+				}
 			}
 			delete(*newStreamsList, iSuuid)
 		} else {
@@ -279,64 +287,21 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) {
 	//no suuid ->delete
 	for _, iSuuid := range streamToDelete {
 		delete((*obj.Streams), iSuuid)
+		if !isListChanged {
+			isListChanged = true
+		}
 	}
 
 	//new suuid ->add
 	for iSuuid, newStream := range *newStreamsList {
 		(*obj.Streams)[iSuuid] = newStream
+		if !isListChanged {
+			isListChanged = true
+		}
 	}
 
-}
+	return isListChanged
 
-func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
-
-	// /*
-	const SUUID = "0011"
-	temStreamList := make(map[string]int)
-	// tmpStream := StreamST{
-	// 	Uuid:         SUUID,
-	// 	URL:          "rtsp://",
-	// 	Status:       false,
-	// 	OnDemand:     false,
-	// 	DisableAudio: true,
-	// 	Debug:        false,
-	// 	RunLock:      false,
-	// 	Codecs:       nil,
-	// 	Cl:           make(AvqueueMAP),
-	// }
-	temStreamList[SUUID] = 30
-
-	//		*/ ///////////////??PYM_TEST_00000
-
-	var newStreamsList = make(StreamsMAP)
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("makeTemporalStreams", ": recovered from panic:", r)
-		}
-	}()
-
-	for rows.Next() {
-		var val_stream_id, val_rtsp_01, val_cctv_nm string
-		err := rows.Scan(&val_stream_id, &val_rtsp_01, &val_cctv_nm)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("stream list: stream_id(%s), rtsp_01(%s), cctv_nm(%s)\n",
-			val_stream_id, val_rtsp_01, val_cctv_nm)
-		tmpStream := StreamST{
-			Uuid:         val_stream_id,
-			URL:          val_rtsp_01,
-			Status:       false,
-			OnDemand:     false,
-			DisableAudio: true,
-			Debug:        false,
-			RunLock:      false,
-			Codecs:       nil,
-			Cl:           make(AvqueueMAP),
-		}
-		newStreamsList[val_stream_id] = tmpStream
-	}
-	return &newStreamsList
 }
 
 func RTSPWorkerLoop(suuid, url string, OnDemand, DisableAudio, Debug bool) {
@@ -356,23 +321,24 @@ func RTSPWorkerLoop(suuid, url string, OnDemand, DisableAudio, Debug bool) {
 	}
 }
 
-func (obj *StreamListInfoST) StreamWorkerLoop(suuid string, stream StreamST) {
-	defer obj.Runlock(suuid, false)
-	for {
-		log.Println("Stream Try Connect", suuid)
-		err := RTSPWorker(suuid, stream.URL, stream.OnDemand, stream.DisableAudio, stream.Debug)
-		if err != nil {
-			log.Println(err)
-			gConfig.LastError = err
+/*
+	func (obj *StreamListInfoST) StreamWorkerLoop(suuid string, stream StreamST) {
+		defer obj.Runlock(suuid, false)
+		for {
+			log.Println("Stream Try Connect", suuid)
+			err := RTSPWorker(suuid, stream.URL, stream.OnDemand, stream.DisableAudio, stream.Debug)
+			if err != nil {
+				log.Println(err)
+				gConfig.LastError = err
+			}
+			if stream.OnDemand && !obj.HasViewer(suuid) {
+				log.Println(ErrorStreamExitNoViewer)
+				return
+			}
+			time.Sleep(1 * time.Second)
 		}
-		if stream.OnDemand && !obj.HasViewer(suuid) {
-			log.Println(ErrorStreamExitNoViewer)
-			return
-		}
-		time.Sleep(1 * time.Second)
 	}
-}
-
+*/
 func pseudoUUID() (uuid string) {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)

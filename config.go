@@ -20,11 +20,22 @@ var gConfig ConfigST
 // ConfigST struct
 type ConfigST struct {
 	mutex         sync.RWMutex
+	Dbms          DbmsST       `json:"dbms" groups:"config"`
 	HttpServer    HttpServerST `json:"http_server" groups:"config"`
 	Server        ServerST     `json:"server" groups:"config"`
 	Streams       StreamsMAP   `json:"streams" groups:"config"`
 	Streams_extra StreamsMAP   `json:"streams_extra" groups:"config"`
 	LastError     error
+}
+
+type DbmsST struct {
+	Type      string `json:"type" groups:"config"`
+	Host      string `json:"host" groups:"config"`
+	Port      int    `json:"port" groups:"config"`
+	User      string `json:"user" groups:"config"`
+	Pass      string `json:"pass" groups:"config"`
+	Dbname    string `json:"dbname" groups:"config"`
+	TableName string `json:"tablename" groups:"config"`
 }
 
 // ServerST struct
@@ -126,7 +137,7 @@ func (in_cfgdata *ConfigST) SaveConfig() error {
 		return err
 	}
 
-	err = os.WriteFile("config_backup.json", JsonData, 0644)
+	err = os.WriteFile(configFile, JsonData, 0644)
 	if err != nil {
 		// log.WithFields(logrus.Fields{
 		// 	"module": "config",

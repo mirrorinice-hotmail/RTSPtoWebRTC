@@ -1,0 +1,40 @@
+{{template "head.html" .}}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0 text-dark">Streams list</h1>
+      </div>
+    </div>
+  </div><!-- /.container-fluid -->
+</div>
+<div class="content">
+  <div class="container-fluid">
+    <div class="col-6">
+      <h5 style="text-align: center;"> {{ len .streams}} Streams </h5>
+    </div>
+
+    <div class="stream_list">
+      {{ range $key, $value := .streams }}
+      <div class="row mt-2">
+        <div class="col-6" id="{{ $key }}">
+          <div class="card-header">
+            <h3 class="card-title one-line-header" style="margin-right: 100px;">{{.Uuid}}</h3>
+            <a class="btn"
+              style="width: 100px; height: 35px ;background-color: #2c312c; color: white;  margin-right: 10px;"
+              href="/stream/player/{{$key}}"> <i class="fas fa-play"></i> Preview </a>
+            <a class="btn"
+              style="width: 100px; height: 35px ;background-color: #2c312c; color: white; margin-right: 10px;"
+              href="/pages/stream/edit/{{$key}}"> <i class="fas fa-pen"></i> Edit</a>
+            <a class="btn"
+              style="width: 100px; height: 35px ;background-color: #2c312c; color: white; margin-right: 10px;"
+              onclick="deleteStream('{{ $key }}')" href="#"> <i class="fas fa-trash"></i> Delete</a>
+          </div>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+
+  </div>
+</div>
+{{template "foot.html" .}}
