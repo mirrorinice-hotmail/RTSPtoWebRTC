@@ -30,6 +30,9 @@ func serveHTTP() {
 		router.LoadHTMLGlob("web/templates/*")
 		router.GET("/", HTTPAPIStreamList)
 		router.GET("/stream/list", HTTPAPIStreamList)
+		router.GET("/stream/edit", HTTPAPIStreamEdit)
+		router.GET("/stream/edit/:uuid", HTTPAPIStreamEdit)
+		router.GET("/stream/add", HTTPAPIStreamAdd)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
@@ -93,6 +96,43 @@ func HTTPAPIStreamList(c *gin.Context) {
 	})
 }
 
+// edit
+func HTTPAPIStreamEdit(c *gin.Context) {
+	strSuuid := c.Param("uuid")
+	if !gStreamListInfo.ext(strSuuid) {
+		log.Println("Stream Not Found")
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    gConfig.HttpServer.HTTPPort,
+			"version": time.Now().String(),
+		})
+		return
+	}
+
+	pagename := "edit_stream"
+	c.HTML(http.StatusOK, pagename+".html", gin.H{
+		"port":      gConfig.HttpServer.HTTPPort,
+		"streams":   gStreamListInfo.Streams,
+		"streamone": (*gStreamListInfo.Streams)[strSuuid],
+		"uuid":      strSuuid,
+		"version":   time.Now().String(),
+		"page":      "Edit Stream",
+	})
+
+}
+
+// add
+func HTTPAPIStreamAdd(c *gin.Context) {
+	pagename := "edit_stream"
+	c.HTML(http.StatusOK, pagename+".html", gin.H{
+		"port":      gConfig.HttpServer.HTTPPort,
+		"streams":   gStreamListInfo.Streams,
+		"streamone": StreamST{Uuid: "", Name: "", URL: ""},
+		"uuid":      "",
+		"version":   time.Now().String(),
+		"page":      "Add Stream",
+	})
+}
+
 // stream player
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	strSuuid := c.Param("uuid")
@@ -109,7 +149,7 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 
 	c.HTML(http.StatusOK, "player.html", gin.H{
 		"port":     gConfig.HttpServer.HTTPPort,
-		"suuid":    strSuuid, //??PYM_TEST_00000 c.Param("uuid"),
+		"suuid":    strSuuid,
 		"suuidMap": all,
 		"version":  time.Now().String(),
 	})

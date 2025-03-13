@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"fmt"
 	"log"
 	"sync"
@@ -27,8 +26,11 @@ type StreamListInfoST struct {
 
 // StreamST struct
 type AvqueueMAP map[string]avQueue
+
 type StreamST struct {
 	Uuid         string
+	Name         string
+	Channels     ChannelMAP
 	URL          string `json:"url" groups:"config"`
 	Status       bool   `json:"status" groups:"config"`
 	OnDemand     bool   `json:"on_demand" groups:"config"`
@@ -37,6 +39,11 @@ type StreamST struct {
 	RunLock      bool
 	Codecs       []av.CodecData
 	Cl           AvqueueMAP
+}
+
+type ChannelMAP map[string]ChannelST
+type ChannelST struct {
+	Name string
 }
 
 type avQueue struct {
@@ -229,35 +236,6 @@ func (obj *StreamListInfoST) clDe(suuid, cuuid string) {
 	defer obj.mutex.Unlock()
 	if _, ok := (*obj.Streams)[suuid]; ok {
 		delete((*obj.Streams)[suuid].Cl, cuuid)
-	}
-}
-
-func (obj *StreamListInfoST) update_list(rows *sql.Rows) {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
-	var val_stream_id, val_rtsp_01, val_rtsp_02, val_cctv_nm string
-	err := rows.Scan(&val_stream_id, &val_rtsp_01, &val_cctv_nm)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("stream list: stream_id(%s), rtsp_01(%s), rtsp_02(%s) , cctv_nm(%s)\n",
-		val_stream_id, val_rtsp_01, val_rtsp_02, val_cctv_nm)
-
-	if tmpStream, ok := (*gStreamListInfo.Streams)[val_stream_id]; ok {
-		tmpStream.URL = val_rtsp_01
-		(*gStreamListInfo.Streams)[val_stream_id] = tmpStream
-	} else {
-		tmpStream = StreamST{
-			Uuid:         val_stream_id,
-			URL:          val_rtsp_01,
-			Status:       false,
-			OnDemand:     false,
-			DisableAudio: true,
-			Debug:        false,
-			RunLock:      false,
-			Codecs:       nil,
-			Cl:           make(AvqueueMAP)}
-		(*gStreamListInfo.Streams)[val_stream_id] = tmpStream
 	}
 }
 

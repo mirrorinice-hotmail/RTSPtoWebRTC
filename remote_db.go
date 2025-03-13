@@ -286,6 +286,8 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 
 		tmpStream := StreamST{
 			Uuid:         val_stream_id,
+			Name:         val_stream_id,
+			Channels:     make(ChannelMAP),
 			URL:          val_rtsp_01,
 			Status:       false,
 			OnDemand:     false,
@@ -295,6 +297,7 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 			Codecs:       nil,
 			Cl:           make(AvqueueMAP),
 		}
+		tmpStream.Channels["0"] = ChannelST{}
 		newStreamsList[val_stream_id] = tmpStream
 	}
 	return &newStreamsList

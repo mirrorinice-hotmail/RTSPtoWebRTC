@@ -90,8 +90,11 @@ func (cfg *ConfigST) loadConfig() {
 			log.Fatalln(err)
 		}
 		for iUuid, tmpStream := range cfg.Streams {
+			tmpStream.Channels = make(ChannelMAP)
 			tmpStream.Cl = make(AvqueueMAP)
 			tmpStream.Uuid = iUuid
+			tmpStream.Name = iUuid
+			tmpStream.Channels["0"] = ChannelST{""}
 			cfg.Streams[iUuid] = tmpStream
 		}
 	} else {
