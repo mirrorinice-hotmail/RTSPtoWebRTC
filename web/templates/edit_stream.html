@@ -26,19 +26,19 @@
             <div class="card-body">
               <div class="form-group">
                 <label for="exampleInputEmail1">Stream name</label>
-                <input type="text" class="form-control" name="stream-name" placeholder="Enter stream name"
-                  id="stream-name" value="{{$stream.Name}}">
+                <input type="text" class="form-control" name="stream-name" id="stream-name" {{if eq (len $stream.Name) 0
+                  }} placeholder="Enter stream name" {{else}} readonly value="{{$stream.Name}}" {{end}}>
               </div>
               <div class="form-group">
                 <label for="exampleInputPassword1">Stream url</label>
-                <input type="text" name="stream-url" class="form-control" placeholder="Enter stream url"
-                  value="{{$mainChannel.URL}}">
+                <input type="text" class="form-control" name="stream-url" id="stream-url"
+                  placeholder="  Enter stream url" value="{{$mainChannel.URL}}">
               </div>
               <div class="form-group">
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" name="ondemand" id="ondemand-switch" {{ if eq
+                  <input type="checkbox" class="custom-control-input" name="on_demand" id="on_demand-switch" {{ if eq
                     $mainChannel.OnDemand true}} checked {{ end }}>
-                  <label class="custom-control-label" for="ondemand-switch">OnDemand</label>
+                  <label class="custom-control-label" for="on_demand-switch">OnDemand</label>
                 </div>
               </div>
               <div class="form-group">
@@ -73,9 +73,9 @@
               </div>
               <div class="form-group">
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" name="ondemand"
-                    id="substream-ondemand-switch-{{$key}}" {{ if eq $value.Debug true}} checked {{ end }}>
-                  <label class="custom-control-label" for="substream-ondemand-switch-{{$key}}">OnDemand</label>
+                  <input type="checkbox" class="custom-control-input" name="on_demand"
+                    id="substream-on_demand-switch-{{$key}}" {{ if eq $value.Debug true}} checked {{ end }}>
+                  <label class="custom-control-label" for="substream-on_demand-switch-{{$key}}">OnDemand</label>
                 </div>
               </div>
               <div class="form-group">
@@ -107,24 +107,95 @@
 {{template "foot.html" .}}
 
 <script>
+  const req_save_stream_info = "save_stream"
 
   function SaveStream() {
-    var params = {
-      uuid: $('#uuid').val(),
-      name: $('#stream-name').val(),
-      channels: {}
-    }
+    stream_name = $('#stream-name').val();
+    console.log('SaveStream()....streamJson:' + {{.streamJson }})
+  streamList = JSON.parse({{.streamJson }});
+  if (streamList.hasOwnProperty(stream_name)) {
+    console.log(`SaveStream()..:'` + stream_name + `' !!! exist`);
+  } else {
+    console.log(`SaveStream()..:'` + stream_name + `' ??? not exist`);
+    return
+  }
 
-    $('.stream-form').each(function (i) {
-      params.channels[i] = {
-        url: $(this).find('input[name="stream-url"]').val(),
-        on_demand: Boolean(parseInt($(this).find('select[name="stream-ondemand"]').val())),
-        debug: Boolean($(this).find('input[name="debug"]').prop('checked')),
+  var params = {
+    suuid: stream_name,
+    url: $('#stream-url').val(),
+    debug: Boolean($('#debug-switch').prop('checked')),
+    on_demand: Boolean($('#on_demand-switch').prop('checked')),
+  }
+  if (params.debug == null) {
+    params.debug == false;
+  }
+  if (params.on_demand == null) {
+    params.on_demand == false;
+  }
+
+  //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
+  goMyRequest(req_save_stream_info, params.suuid, params);
+  }
+
+  function goMyRequest(method, suuid, data) {
+    data = data || null;
+    suuid = suuid || null;
+    var path = '';
+    var type = 'GET';
+    switch (method) {
+      case req_save_stream_info:
+        path = '/stream/save';
+        type = 'POST';
+        break;
+      default:
+        path = '';
+        type = 'GET';
+    }
+    if (path == '') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'It`s goRequest function mistake',
+        confirmButtonText: 'Close',
+      })
+      return;
+    }
+    var ajaxParam = {
+      url: path,
+      type: type,
+      dataType: 'json',
+      beforeSend: function (xhr) {
+        xhr.setRequestHeader("Authorization", "Basic " + btoa("demo:demo"));
+      },
+      success: function (response) {
+        goMyRequestHandle(method, response, suuid);
+      },
+      error: function (e) {
+        console.log(e);
       }
-      if (params.channels[i].on_demand == null) {
-        params.channels[i].on_demand == true;
-      }
-    });
-    goRequest('edit', params.uuid, params);
+    };
+    if (data != null) {
+      ajaxParam.data = JSON.stringify(data);
+      //console.log('goMyRequest()...ajaxParam.data :' + ajaxParam.data);
+    }
+    $.ajax(ajaxParam);
+  }
+
+  function goMyRequestHandle(method, response, suuid) {
+    //console.log("goMyRequestHandle()..." + method + " , " + response + " , " + suuid)
+    switch (method) {
+      case req_save_stream_info:
+        if (response.status == "success") {
+          window.location.href = '/stream/list';
+          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
+        } else {
+          Swal.fire({
+            icon: 'error', title: 'Oops...', text: 'Same mistake issset',
+          })
+        }
+        break;
+      default:
+
+    }
   }
 </script>

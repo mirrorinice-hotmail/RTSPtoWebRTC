@@ -1,14 +1,13 @@
 {
-  "dbms" : {
-    "type" : "postgresql",
-    "host" : "127.0.0.1",
-    "port" : 5432,
-    "user" : "postgres",
-    "pass"   : "rino1234",
-    "dbname" : "test_rino_cctv_list",
-    "tablename" : "tbl_cctv_info"
+  "dbms": {
+    "dbname": "test_rino_cctv_list",
+    "host": "127.0.0.1",
+    "pass": "rino1234",
+    "port": 5432,
+    "tablename": "tbl_cctv_info",
+    "type": "postgresql",
+    "user": "postgres"
   },
-
   "http_server": {
     "http_port": ":8083"
   },

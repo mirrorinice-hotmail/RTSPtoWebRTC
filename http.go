@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -33,6 +34,8 @@ func serveHTTP() {
 		router.GET("/stream/edit", HTTPAPIStreamEdit)
 		router.GET("/stream/edit/:uuid", HTTPAPIStreamEdit)
 		router.GET("/stream/add", HTTPAPIStreamAdd)
+		router.POST("/stream/save", HTTPAPIStreamSave)
+		router.GET("/stream/delete/:uuid", HTTPAPIStreamDelete)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
@@ -87,12 +90,15 @@ func HTTPAPIStreamList(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 	}
 
+	media_svr_addr := gConfig.HttpServer.HTTPHost + gConfig.HttpServer.HTTPPort
+	log.Println("HTTPAPIStreamList() media_svr_addr: " + media_svr_addr)
 	pagename := "stream_list"
 	c.HTML(http.StatusOK, pagename+".html", gin.H{
-		"port":    gConfig.HttpServer.HTTPPort,
-		"streams": gStreamListInfo.Streams,
-		"version": time.Now().String(),
-		"page":    pagename,
+		"media_svr_addr": media_svr_addr,
+		"port":           gConfig.HttpServer.HTTPPort,
+		"streams":        gStreamListInfo.Streams,
+		"version":        time.Now().String(),
+		"page":           pagename,
 	})
 }
 
@@ -109,13 +115,15 @@ func HTTPAPIStreamEdit(c *gin.Context) {
 	}
 
 	pagename := "edit_stream"
+	streamsJSON, _ := json.Marshal(*gStreamListInfo.Streams)
 	c.HTML(http.StatusOK, pagename+".html", gin.H{
-		"port":      gConfig.HttpServer.HTTPPort,
-		"streams":   gStreamListInfo.Streams,
-		"streamone": (*gStreamListInfo.Streams)[strSuuid],
-		"uuid":      strSuuid,
-		"version":   time.Now().String(),
-		"page":      "Edit Stream",
+		"port":       gConfig.HttpServer.HTTPPort,
+		"streamJson": string(streamsJSON),
+		"streams":    gStreamListInfo.Streams,
+		"streamone":  (*gStreamListInfo.Streams)[strSuuid],
+		"uuid":       strSuuid,
+		"version":    time.Now().String(),
+		"page":       "Edit Stream",
 	})
 
 }
@@ -123,14 +131,36 @@ func HTTPAPIStreamEdit(c *gin.Context) {
 // add
 func HTTPAPIStreamAdd(c *gin.Context) {
 	pagename := "edit_stream"
+	streamsJSON, _ := json.Marshal(*gStreamListInfo.Streams)
 	c.HTML(http.StatusOK, pagename+".html", gin.H{
-		"port":      gConfig.HttpServer.HTTPPort,
-		"streams":   gStreamListInfo.Streams,
-		"streamone": StreamST{Uuid: "", Name: "", URL: ""},
-		"uuid":      "",
-		"version":   time.Now().String(),
-		"page":      "Add Stream",
+		"port":       gConfig.HttpServer.HTTPPort,
+		"streamJson": string(streamsJSON),
+		"streams":    gStreamListInfo.Streams,
+		"streamone":  StreamST{Uuid: "", Name: "", URL: ""},
+		"uuid":       "",
+		"version":    time.Now().String(),
+		"page":       "Add Stream",
 	})
+}
+
+// delete
+func HTTPAPIStreamDelete(c *gin.Context) {
+	strSuuid := c.Param("uuid")
+	if !gStreamListInfo.ext(strSuuid) {
+		log.Println("Stream Not Found")
+		c.HTML(http.StatusOK, "index.html", gin.H{
+			"port":    gConfig.HttpServer.HTTPPort,
+			"version": time.Now().String(),
+		})
+		return
+	}
+
+	if !gStreamListInfo.DeleteStream(strSuuid) {
+		return
+	}
+
+	gConfig.SaveConfig()
+	HTTPAPIStreamList(c)
 }
 
 // stream player
@@ -155,15 +185,18 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	})
 }
 
-// Message resp struct
-type Message struct {
-	//Status int `json:"status"`
-	//Payload interface{} `json:"payload"`
-}
-
 func HTTPAPIServerStreamUpdateList(c *gin.Context) {
-	gCctvListMgr.request_updatelist()
-	c.IndentedJSON(200, Message{})
+	//gCctvListMgr.request_updatelist()
+	log.Println("HTTPAPIServerStreamUpdateList: started")
+	if gCctvListMgr.updateList() {
+		log.Println("HTTPAPIServerStreamUpdateList: sucess")
+		c.JSON(http.StatusOK, gin.H{"status": "success"})
+	} else {
+		log.Println("HTTPAPIServerStreamUpdateList: failure")
+		c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
+	}
+
+	log.Println("HTTPAPIServerStreamUpdateList: end")
 }
 
 // stream codec
@@ -202,6 +235,41 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 			return
 		}
 	}
+}
+
+type streamSaveParamST struct {
+	Suuid    string `json:"suuid" binding:"required"`
+	Url      string `json:"url" binding:"required"`
+	Debug    bool   `json:"debug"`
+	OnDemand bool   `json:"on_demand"`
+}
+
+// save stream info
+func HTTPAPIStreamSave(c *gin.Context) {
+	log.Println("HTTPAPIStreamSave start...")
+	authHeader := c.GetHeader("Authorization")
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("demo:demo"))
+
+	if authHeader != expectedAuth {
+		log.Println("HTTPAPIStreamSave error: Unau thorized...")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var saveParam streamSaveParamST
+	if err := c.ShouldBindJSON(&saveParam); err != nil {
+		log.Println("HTTPAPIStreamSave error: Invalid JSON format...")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
+		return
+	}
+
+	log.Printf("Received: suuid(%s) url(%s) debug (%t) ondemand (%t)\n",
+		saveParam.Suuid,
+		saveParam.Url,
+		saveParam.Debug,
+		saveParam.OnDemand)
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 // stream video over WebRTC
@@ -289,11 +357,6 @@ func CORSMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	}
-}
-
-type Response struct {
-	Tracks []string `json:"tracks"`
-	Sdp64  string   `json:"sdp64"`
 }
 
 type ResponseError struct {

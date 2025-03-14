@@ -251,19 +251,26 @@ func (obj *tCctvListMgr) start() (ot_result int) {
 	for cont {
 		switch <-obj.Comm_sig {
 		case CCTVLISTMGR_END:
-			cont = false
 			log.Println(name, ": received 'end'")
+			cont = false
 		case CCTVLISTMGR_UPDATE:
 			log.Println(name, ": received 'update'")
-			isListChanged := obj.update_stream_list()
-			if isListChanged {
-				gConfig.SaveConfig()
-				restart()
-			}
+			obj.updateList()
 		}
 	}
 
 	return 0
+}
+
+func (obj *tCctvListMgr) updateList() bool {
+	isListChanged := obj.update_stream_list()
+	if isListChanged {
+		gConfig.SaveConfig()
+		go restart()
+		return true
+	} else {
+		return false
+	}
 }
 
 func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
@@ -293,9 +300,10 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 			OnDemand:     false,
 			DisableAudio: true,
 			Debug:        false,
-			RunLock:      false,
 			Codecs:       nil,
 			Cl:           make(AvqueueMAP),
+			RunLock:      false,
+			//msgStop:      make(chan struct{}),
 		}
 		tmpStream.Channels["0"] = ChannelST{}
 		newStreamsList[val_stream_id] = tmpStream

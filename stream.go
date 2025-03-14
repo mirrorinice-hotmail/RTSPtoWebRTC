@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net"
 	"time"
 
@@ -12,9 +13,10 @@ var (
 	ErrorStreamExitNoVideoOnStream = errors.New("Stream Exit No Video On Stream")
 	ErrorStreamExitRtspDisconnect  = errors.New("Stream Exit Rtsp Disconnect")
 	ErrorStreamExitNoViewer        = errors.New("Stream Exit On Demand No Viewer")
+	ErrorStreamExitStopMsgReceived = errors.New("Stream Exit Stop message received")
 )
 
-func RTSPWorker(suuid, url string, OnDemand, DisableAudio, Debug bool) error {
+func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) error {
 	keyTest := time.NewTimer(20 * time.Second)
 	clientTest := time.NewTimer(20 * time.Second)
 	//add next TimeOut
@@ -39,6 +41,9 @@ func RTSPWorker(suuid, url string, OnDemand, DisableAudio, Debug bool) error {
 	}
 	for {
 		select {
+		case <-msgStop:
+			log.Println("RTSPWorker : ErrorStreamExitNoViewer")
+			return ErrorStreamExitStopMsgReceived
 		case <-clientTest.C:
 			if OnDemand {
 				if !gStreamListInfo.HasViewer(suuid) {

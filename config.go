@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
+	"net"
 	"os"
 	"sync"
 
@@ -50,6 +51,7 @@ type ServerST struct {
 // Http Server struct
 type HttpServerST struct {
 	HTTPPort string `json:"http_port" groups:"config"`
+	HTTPHost string `json:"http_host" groups:"config"`
 }
 
 func (cfg *ConfigST) GetICEServers() []string {
@@ -95,6 +97,8 @@ func (cfg *ConfigST) loadConfig() {
 			tmpStream.Uuid = iUuid
 			tmpStream.Name = iUuid
 			tmpStream.Channels["0"] = ChannelST{""}
+			tmpStream.RunLock = false
+			//tmpStream.msgStop = make(chan struct{})
 			cfg.Streams[iUuid] = tmpStream
 		}
 	} else {
@@ -112,6 +116,10 @@ func (cfg *ConfigST) loadConfig() {
 		}
 
 		cfg.Streams = make(StreamsMAP)
+	}
+
+	if cfg.HttpServer.HTTPHost == "" {
+		cfg.HttpServer.HTTPHost = GetFirstLocalIp()
 	}
 }
 
@@ -151,4 +159,23 @@ func (in_cfgdata *ConfigST) SaveConfig() error {
 	}
 
 	return nil
+}
+
+func GetFirstLocalIp() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Println("GetFirstLocalIp().. Error:", err)
+		return ""
+	}
+	// Iterate through each address to print the IP
+	for _, addr := range addrs {
+		// Convert network address to IPNet
+		if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+			// IPv4 check (excluding IPv6)
+			if ipNet.IP.To4() != nil {
+				return ipNet.IP.String()
+			}
+		}
+	}
+	return ""
 }

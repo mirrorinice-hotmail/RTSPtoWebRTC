@@ -36,9 +36,10 @@ type StreamST struct {
 	OnDemand     bool   `json:"on_demand" groups:"config"`
 	DisableAudio bool   `json:"disable_audio" groups:"config"`
 	Debug        bool   `json:"debug" groups:"config"`
-	RunLock      bool
 	Codecs       []av.CodecData
 	Cl           AvqueueMAP
+	RunLock      bool
+	msgStop      chan struct{}
 }
 
 type ChannelMAP map[string]ChannelST
@@ -51,7 +52,7 @@ type avQueue struct {
 }
 
 func serveStreams() {
-	gStreamListInfo.RunAllStream()
+	gStreamListInfo.RunAllPersistStream()
 	log.Println("serverStream Started")
 }
 
@@ -59,40 +60,41 @@ func (obj *StreamListInfoST) init(stream *StreamsMAP) {
 	obj.Streams = stream
 }
 
-func (obj *StreamListInfoST) RunAllStream() {
+func (obj *StreamListInfoST) RunAllPersistStream() {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	for iSuuid, tmpStream := range *obj.Streams {
 		if tmpStream.RunLock {
 			continue
 		}
-		log.Println("RunStream of all", iSuuid)
+		if tmpStream.OnDemand {
+			continue
+		}
+		log.Println("RunStream :", iSuuid)
+
 		tmpStream.RunLock = true
+		tmpStream.msgStop = make(chan struct{})
 		(*obj.Streams)[iSuuid] = tmpStream
-		//*
-		go RTSPWorkerLoop(iSuuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
-		/*/
-		go obj.StreamWorkerLoop(iSuuid, tmpStream)
-		// */
+		go RTSPWorkerLoop(tmpStream.msgStop, iSuuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
 	}
 }
 
-func (obj *StreamListInfoST) RunIFNotRun(suuid string) {
+/* func (obj *StreamListInfoST) RunIFNotRun(suuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	if tmpStream, ok := (*obj.Streams)[suuid]; ok {
-		if tmpStream.OnDemand && !tmpStream.RunLock {
-			log.Println("RunIFNotRun", suuid)
-			tmpStream.RunLock = true
-			(*obj.Streams)[suuid] = tmpStream
-			//*
-			go RTSPWorkerLoop(suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
-			/*/
-			go obj.StreamWorkerLoop(suuid, tmpStream)
-			// */
-		}
+	tmpStream, ok := (*obj.Streams)[suuid]
+	if !ok {
+		return
 	}
-}
+
+	if tmpStream.OnDemand && !tmpStream.RunLock {
+		log.Println("RunIFNotRun", suuid)
+		tmpStream.RunLock = true
+		tmpStream.msgStop = make(chan struct{})
+		(*obj.Streams)[suuid] = tmpStream
+		go RTSPWorkerLoop(tmpStream.msgStop, suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
+	}
+}*/
 
 func (obj *StreamListInfoST) RunStream(suuid string) {
 	obj.mutex.Lock()
@@ -103,28 +105,62 @@ func (obj *StreamListInfoST) RunStream(suuid string) {
 	}
 	log.Println("RunStream", suuid)
 	tmpStream.RunLock = true
+	tmpStream.msgStop = make(chan struct{})
 	(*obj.Streams)[suuid] = tmpStream
-	//*
-	go RTSPWorkerLoop(suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
-	/*/
-	go obj.StreamWorkerLoop(suuid, stream)
-	// */
-
+	go RTSPWorkerLoop(tmpStream.msgStop, suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
 }
 
-func (obj *StreamListInfoST) Runlock(suuid string, onOff bool) {
+func (obj *StreamListInfoST) StopStream(suuid string) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	tmpStream, ok := (*obj.Streams)[suuid]
-	if !ok || tmpStream.RunLock {
+	if !ok {
+		return false
+	}
+	if !tmpStream.RunLock {
+		if tmpStream.OnDemand {
+			return true
+		}
+		return false
+	}
+
+	log.Println("StopStream", suuid)
+	close(tmpStream.msgStop)
+	obj.mutex.Unlock()
+
+	for {
+		if !(*obj.Streams)[suuid].RunLock {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	obj.mutex.Lock()
+	return true
+}
+
+func (obj *StreamListInfoST) DeleteStream(suuid string) bool {
+	if !obj.StopStream(suuid) {
+		return false
+	}
+	obj.mutex.Lock() //??PYM_TEST_00000 how about done chan??
+	defer obj.mutex.Unlock()
+
+	delete((*obj.Streams), suuid)
+	return true
+}
+
+func (obj *StreamListInfoST) RunUnlock(suuid string) {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	tmpStream, ok := (*obj.Streams)[suuid]
+	if !ok {
 		return
 	}
-
 	if tmpStream.RunLock {
-		tmpStream.RunLock = onOff
+		tmpStream.RunLock = false
 		(*obj.Streams)[suuid] = tmpStream
 	}
-
 }
 
 func (obj *StreamListInfoST) HasViewer(suuid string) bool {
@@ -282,14 +318,17 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 }
 
-func RTSPWorkerLoop(suuid, url string, OnDemand, DisableAudio, Debug bool) {
-	defer gStreamListInfo.Runlock(suuid, false)
+func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) {
+	defer gStreamListInfo.RunUnlock(suuid)
 	for {
 		log.Println("Stream Try Connect", suuid)
-		err := RTSPWorker(suuid, url, OnDemand, DisableAudio, Debug)
+		err := RTSPWorker(msgStop, suuid, url, OnDemand, DisableAudio, Debug)
 		if err != nil {
 			log.Println(err)
 			gConfig.LastError = err
+			if err == ErrorStreamExitStopMsgReceived {
+				return
+			}
 		}
 		if OnDemand && !gStreamListInfo.HasViewer(suuid) {
 			log.Println(ErrorStreamExitNoViewer)
@@ -299,24 +338,6 @@ func RTSPWorkerLoop(suuid, url string, OnDemand, DisableAudio, Debug bool) {
 	}
 }
 
-/*
-	func (obj *StreamListInfoST) StreamWorkerLoop(suuid string, stream StreamST) {
-		defer obj.Runlock(suuid, false)
-		for {
-			log.Println("Stream Try Connect", suuid)
-			err := RTSPWorker(suuid, stream.URL, stream.OnDemand, stream.DisableAudio, stream.Debug)
-			if err != nil {
-				log.Println(err)
-				gConfig.LastError = err
-			}
-			if stream.OnDemand && !obj.HasViewer(suuid) {
-				log.Println(ErrorStreamExitNoViewer)
-				return
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}
-*/
 func pseudoUUID() (uuid string) {
 	b := make([]byte, 16)
 	_, err := rand.Read(b)
