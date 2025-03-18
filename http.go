@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"time"
 
 	"github.com/deepch/vdk/av"
@@ -174,14 +173,15 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 		})
 		return
 	}
-	_, all := gStreamListInfo.list()
-	sort.Strings(all)
+
+	media_svr_addr := gConfig.HttpServer.HTTPHost + gConfig.HttpServer.HTTPPort
+	log.Println("HTTPAPIStreamList() media_svr_addr: " + media_svr_addr)
 
 	c.HTML(http.StatusOK, "player.html", gin.H{
-		"port":     gConfig.HttpServer.HTTPPort,
-		"suuid":    strSuuid,
-		"suuidMap": all,
-		"version":  time.Now().String(),
+		"media_svr_addr": media_svr_addr,
+		"port":           gConfig.HttpServer.HTTPPort,
+		"suuid":          strSuuid,
+		"version":        time.Now().String(),
 	})
 }
 

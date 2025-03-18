@@ -2,7 +2,7 @@
 
 @SET GOOS=windows
 @SET GOARCH=amd64
-go build -ldflags "-s -w" -o bin/rtsp2webrtc_amd64.exe
+@REM go build -ldflags "-s -w" -o bin/rtsp2webrtc_amd64.exe
 
 @SET GOOS=linux
 @SET GOARCH=386

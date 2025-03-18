@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	log.Println("--Start--")
+	log.Println("--Start--1701")
 	gConfig.loadConfig()
 	gStreamListInfo.init(&gConfig.Streams)
 	gCctvListMgr.init(&gConfig.Dbms)

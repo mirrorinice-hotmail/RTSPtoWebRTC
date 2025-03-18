@@ -9,11 +9,12 @@
     "user": "postgres"
   },
   "http_server": {
-    "http_port": ":8083"
+    "http_port": ":8083",
+    "http_host": "10.10.1.183"
   },
   "server": {
     "ice_credential": "",
-    "ice_servers": [],
+    "ice_servers": ["stun:stun.l.google.com:19302"],
     "ice_username": "",
     "webrtc_port_max": 7109,
     "webrtc_port_min": 7101

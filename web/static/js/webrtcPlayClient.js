@@ -5,9 +5,9 @@ let webrtc_source_id = null;
 let webrtc_api_get_codec = "/stream/codec/"
 let webrtc_api_set_remotesdp = "/stream/receiver/"
 let webrtc_urlscheme = "http://"
-let webrtc_stunaddr = "";
+let webrtc_stunaddr = "stun:stun.l.google.com:19302";
 //"stun:" + "127.0.0.1:2222"
-//"stun.l.google.com:19302"
+//"stun:stun.l.google.com:19302"
 
 
 
@@ -28,9 +28,9 @@ async function play_pause_video() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 let webrtc_config = {
-  // iceServers: [{
-  //   urls: [webrtc_stunaddr]
-  // }]
+  iceServers: [{
+    urls: [webrtc_stunaddr]
+  }]
 };
 let webrtc_stream = new MediaStream();
 let webrtc_pc = null;
