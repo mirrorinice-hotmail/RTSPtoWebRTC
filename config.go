@@ -7,9 +7,6 @@ import (
 	"net"
 	"os"
 	"sync"
-
-	"github.com/hashicorp/go-version"
-	"github.com/liip/sheriff"
 )
 
 /*"github.com/imdario/mergo"*/
@@ -20,13 +17,11 @@ var gConfig ConfigST
 
 // ConfigST struct
 type ConfigST struct {
-	mutex         sync.RWMutex
-	Dbms          DbmsST       `json:"dbms" groups:"config"`
-	HttpServer    HttpServerST `json:"http_server" groups:"config"`
-	Server        ServerST     `json:"server" groups:"config"`
-	Streams       StreamsMAP   `json:"streams" groups:"config"`
-	Streams_extra StreamsMAP   `json:"streams_extra" groups:"config"`
-	LastError     error
+	mutex      sync.RWMutex
+	Dbms       DbmsST       `json:"dbms" groups:"config"`
+	HttpServer HttpServerST `json:"http_server" groups:"config"`
+	Server     ServerST     `json:"server" groups:"config"`
+	LastError  error
 }
 
 type DbmsST struct {
@@ -54,52 +49,44 @@ type HttpServerST struct {
 	HTTPHost string `json:"http_host" groups:"config"`
 }
 
-func (cfg *ConfigST) GetICEServers() []string {
-	cfg.mutex.Lock()
-	defer cfg.mutex.Unlock()
-	return cfg.Server.ICEServers
+func (obj *ConfigST) GetICEServers() []string {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	return obj.Server.ICEServers
 }
 
-func (cfg *ConfigST) GetICEUsername() string {
-	cfg.mutex.Lock()
-	defer cfg.mutex.Unlock()
-	return cfg.Server.ICEUsername
+func (obj *ConfigST) GetICEUsername() string {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	return obj.Server.ICEUsername
 }
 
-func (cfg *ConfigST) GetICECredential() string {
-	cfg.mutex.Lock()
-	defer cfg.mutex.Unlock()
-	return cfg.Server.ICECredential
+func (obj *ConfigST) GetICECredential() string {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	return obj.Server.ICECredential
 }
 
-func (cfg *ConfigST) GetWebRTCPortMin() uint16 {
-	cfg.mutex.Lock()
-	defer cfg.mutex.Unlock()
-	return cfg.Server.WebRTCPortMin
+func (obj *ConfigST) GetWebRTCPortMin() uint16 {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	return obj.Server.WebRTCPortMin
 }
 
-func (cfg *ConfigST) GetWebRTCPortMax() uint16 {
-	cfg.mutex.Lock()
-	defer cfg.mutex.Unlock()
-	return cfg.Server.WebRTCPortMax
+func (obj *ConfigST) GetWebRTCPortMax() uint16 {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	return obj.Server.WebRTCPortMax
 }
 
-func (cfg *ConfigST) loadConfig() {
+func (obj *ConfigST) loadConfig() {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
 	data, err := os.ReadFile(configFile)
 	if err == nil {
-		err = json.Unmarshal(data, &cfg)
+		err = json.Unmarshal(data, &obj)
 		if err != nil {
 			log.Fatalln(err)
-		}
-		for iUuid, tmpStream := range cfg.Streams {
-			tmpStream.Channels = make(ChannelMAP)
-			tmpStream.Cl = make(AvqueueMAP)
-			tmpStream.Uuid = iUuid
-			tmpStream.Name = iUuid
-			tmpStream.Channels["0"] = ChannelST{""}
-			tmpStream.RunLock = false
-			//tmpStream.msgStop = make(chan struct{})
-			cfg.Streams[iUuid] = tmpStream
 		}
 	} else {
 		addr := flag.String("listen", "8083", "HTTP host:port")
@@ -108,59 +95,57 @@ func (cfg *ConfigST) loadConfig() {
 		iceServer := flag.String("ice_server", "", "ICE Server")
 		flag.Parse()
 
-		cfg.HttpServer.HTTPPort = *addr
-		cfg.Server.WebRTCPortMin = uint16(*udpMin)
-		cfg.Server.WebRTCPortMax = uint16(*udpMax)
+		obj.HttpServer.HTTPPort = *addr
+		obj.Server.WebRTCPortMin = uint16(*udpMin)
+		obj.Server.WebRTCPortMax = uint16(*udpMax)
 		if len(*iceServer) > 0 {
-			cfg.Server.ICEServers = []string{*iceServer}
+			obj.Server.ICEServers = []string{*iceServer}
 		}
-
-		cfg.Streams = make(StreamsMAP)
 	}
 
-	if cfg.HttpServer.HTTPHost == "" {
-		cfg.HttpServer.HTTPHost = GetFirstLocalIp()
+	if obj.HttpServer.HTTPHost == "" {
+		obj.HttpServer.HTTPHost = GetFirstLocalIp()
 	}
 }
 
-// ClientDelete Delete Client
-func (in_cfgdata *ConfigST) SaveConfig() error {
-	// log.WithFields(logrus.Fields{
-	// 	"module": "config",
-	// 	"func":   "NewStreamCore",
-	// }).Debugln("Saving configuration to", configFile)
-	v2, err := version.NewVersion("2.0.0")
-	if err != nil {
-		return err
-	}
-
-	options := &sheriff.Options{
-		Groups:     []string{"config"},
-		ApiVersion: v2,
-	}
-	data, err := sheriff.Marshal(options, in_cfgdata)
-	if err != nil {
-		return err
-	}
-	//data := in_cfgdata
-	JsonData, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(configFile, JsonData, 0644)
-	if err != nil {
+/*
+	func (obj *ConfigST) SaveConfig() error {
 		// log.WithFields(logrus.Fields{
 		// 	"module": "config",
-		// 	"func":   "SaveConfig",
-		// 	"call":   "WriteFile",
-		// }).Errorln(err.Error())
-		return err
+		// 	"func":   "NewStreamCore",
+		// }).Debugln("Saving configuration to", configFile)
+		v2, err := version.NewVersion("2.0.0")
+		if err != nil {
+			return err
+		}
+
+		options := &sheriff.Options{
+			Groups:     []string{"config"},
+			ApiVersion: v2,
+		}
+		data, err := sheriff.Marshal(options, obj)
+		if err != nil {
+			return err
+		}
+		//data := obj
+		JsonData, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(configFile, JsonData, 0644)
+		if err != nil {
+			// log.WithFields(logrus.Fields{
+			// 	"module": "config",
+			// 	"func":   "SaveConfig",
+			// 	"call":   "WriteFile",
+			// }).Errorln(err.Error())
+			return err
+		}
+
+		return nil
 	}
-
-	return nil
-}
-
+*/
 func GetFirstLocalIp() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {

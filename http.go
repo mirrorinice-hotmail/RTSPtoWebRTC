@@ -114,12 +114,12 @@ func HTTPAPIStreamEdit(c *gin.Context) {
 	}
 
 	pagename := "edit_stream"
-	streamsJSON, _ := json.Marshal(*gStreamListInfo.Streams)
+	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
 	c.HTML(http.StatusOK, pagename+".html", gin.H{
 		"port":       gConfig.HttpServer.HTTPPort,
 		"streamJson": string(streamsJSON),
 		"streams":    gStreamListInfo.Streams,
-		"streamone":  (*gStreamListInfo.Streams)[strSuuid],
+		"streamone":  (gStreamListInfo.Streams)[strSuuid],
 		"uuid":       strSuuid,
 		"version":    time.Now().String(),
 		"page":       "Edit Stream",
@@ -130,7 +130,7 @@ func HTTPAPIStreamEdit(c *gin.Context) {
 // add
 func HTTPAPIStreamAdd(c *gin.Context) {
 	pagename := "edit_stream"
-	streamsJSON, _ := json.Marshal(*gStreamListInfo.Streams)
+	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
 	c.HTML(http.StatusOK, pagename+".html", gin.H{
 		"port":       gConfig.HttpServer.HTTPPort,
 		"streamJson": string(streamsJSON),
@@ -158,7 +158,7 @@ func HTTPAPIStreamDelete(c *gin.Context) {
 		return
 	}
 
-	gConfig.SaveConfig()
+	gStreamListInfo.SaveList()
 	HTTPAPIStreamList(c)
 }
 

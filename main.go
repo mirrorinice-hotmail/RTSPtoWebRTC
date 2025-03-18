@@ -14,7 +14,8 @@ import (
 func main() {
 	log.Println("--Start--1701")
 	gConfig.loadConfig()
-	gStreamListInfo.init(&gConfig.Streams)
+	gStreamListInfo.loadList()
+	//gStreamListInfo.init(&gStreamList.Streams)
 	gCctvListMgr.init(&gConfig.Dbms)
 
 	go gCctvListMgr.start()

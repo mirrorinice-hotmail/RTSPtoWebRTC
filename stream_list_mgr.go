@@ -2,12 +2,16 @@ package main
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/deepch/vdk/codec/h264parser"
+	"github.com/hashicorp/go-version"
+	"github.com/liip/sheriff"
 
 	"github.com/deepch/vdk/av"
 )
@@ -17,14 +21,15 @@ import (
 var gStreamListInfo StreamListInfoST
 
 // ///////////////////////////////////
-type StreamsMAP map[string]StreamST
 type StreamListInfoST struct {
-	mutex   sync.RWMutex
-	Streams *StreamsMAP `json:"streams" groups:"config"`
+	mutex         sync.RWMutex
+	Streams       StreamsMAP `json:"streams" groups:"config"`
+	Streams_extra StreamsMAP `json:"streams_extra" groups:"config"`
 	//LastError error
 }
 
-// StreamST struct
+type StreamsMAP map[string]StreamST
+
 type AvqueueMAP map[string]avQueue
 
 type StreamST struct {
@@ -56,14 +61,14 @@ func serveStreams() {
 	log.Println("serverStream Started")
 }
 
-func (obj *StreamListInfoST) init(stream *StreamsMAP) {
-	obj.Streams = stream
-}
+// func (obj *StreamListInfoST) init(stream *StreamsMAP) {
+// 	obj.Streams = stream
+// }
 
 func (obj *StreamListInfoST) RunAllPersistStream() {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	for iSuuid, tmpStream := range *obj.Streams {
+	for iSuuid, tmpStream := range obj.Streams {
 		if tmpStream.RunLock {
 			continue
 		}
@@ -74,7 +79,7 @@ func (obj *StreamListInfoST) RunAllPersistStream() {
 
 		tmpStream.RunLock = true
 		tmpStream.msgStop = make(chan struct{})
-		(*obj.Streams)[iSuuid] = tmpStream
+		(obj.Streams)[iSuuid] = tmpStream
 		go RTSPWorkerLoop(tmpStream.msgStop, iSuuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
 	}
 }
@@ -82,7 +87,7 @@ func (obj *StreamListInfoST) RunAllPersistStream() {
 /* func (obj *StreamListInfoST) RunIFNotRun(suuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	tmpStream, ok := (*obj.Streams)[suuid]
+	tmpStream, ok := (obj.Streams)[suuid]
 	if !ok {
 		return
 	}
@@ -91,7 +96,7 @@ func (obj *StreamListInfoST) RunAllPersistStream() {
 		log.Println("RunIFNotRun", suuid)
 		tmpStream.RunLock = true
 		tmpStream.msgStop = make(chan struct{})
-		(*obj.Streams)[suuid] = tmpStream
+		(obj.Streams)[suuid] = tmpStream
 		go RTSPWorkerLoop(tmpStream.msgStop, suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
 	}
 }*/
@@ -99,21 +104,21 @@ func (obj *StreamListInfoST) RunAllPersistStream() {
 func (obj *StreamListInfoST) RunStream(suuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	tmpStream, ok := (*obj.Streams)[suuid]
+	tmpStream, ok := (obj.Streams)[suuid]
 	if !ok || tmpStream.RunLock {
 		return
 	}
 	log.Println("RunStream", suuid)
 	tmpStream.RunLock = true
 	tmpStream.msgStop = make(chan struct{})
-	(*obj.Streams)[suuid] = tmpStream
+	(obj.Streams)[suuid] = tmpStream
 	go RTSPWorkerLoop(tmpStream.msgStop, suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
 }
 
 func (obj *StreamListInfoST) StopStream(suuid string) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	tmpStream, ok := (*obj.Streams)[suuid]
+	tmpStream, ok := (obj.Streams)[suuid]
 	if !ok {
 		return false
 	}
@@ -129,7 +134,7 @@ func (obj *StreamListInfoST) StopStream(suuid string) bool {
 	obj.mutex.Unlock()
 
 	for {
-		if !(*obj.Streams)[suuid].RunLock {
+		if !(obj.Streams)[suuid].RunLock {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
@@ -146,27 +151,27 @@ func (obj *StreamListInfoST) DeleteStream(suuid string) bool {
 	obj.mutex.Lock() //??PYM_TEST_00000 how about done chan??
 	defer obj.mutex.Unlock()
 
-	delete((*obj.Streams), suuid)
+	delete((obj.Streams), suuid)
 	return true
 }
 
 func (obj *StreamListInfoST) RunUnlock(suuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	tmpStream, ok := (*obj.Streams)[suuid]
+	tmpStream, ok := (obj.Streams)[suuid]
 	if !ok {
 		return
 	}
 	if tmpStream.RunLock {
 		tmpStream.RunLock = false
-		(*obj.Streams)[suuid] = tmpStream
+		(obj.Streams)[suuid] = tmpStream
 	}
 }
 
 func (obj *StreamListInfoST) HasViewer(suuid string) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	if tmpStream, ok := (*obj.Streams)[suuid]; ok && len(tmpStream.Cl) > 0 {
+	if tmpStream, ok := (obj.Streams)[suuid]; ok && len(tmpStream.Cl) > 0 {
 		return true
 	}
 	return false
@@ -175,11 +180,11 @@ func (obj *StreamListInfoST) HasViewer(suuid string) bool {
 func (obj *StreamListInfoST) cast(suuid string, pck av.Packet) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	if _, ok := (*obj.Streams)[suuid]; !ok {
+	if _, ok := (obj.Streams)[suuid]; !ok {
 		return
 	}
 
-	for _, iQueue := range (*obj.Streams)[suuid].Cl {
+	for _, iQueue := range (obj.Streams)[suuid].Cl {
 		if len(iQueue.c) < cap(iQueue.c) {
 			iQueue.c <- pck
 		}
@@ -189,23 +194,23 @@ func (obj *StreamListInfoST) cast(suuid string, pck av.Packet) {
 func (obj *StreamListInfoST) ext(suuid string) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	_, ok := (*obj.Streams)[suuid]
+	_, ok := (obj.Streams)[suuid]
 	return ok
 }
 
 func (obj *StreamListInfoST) coAd(suuid string, codecs []av.CodecData) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	if tmpStream, ok := (*obj.Streams)[suuid]; ok {
+	if tmpStream, ok := (obj.Streams)[suuid]; ok {
 		tmpStream.Codecs = codecs
-		(*obj.Streams)[suuid] = tmpStream
+		(obj.Streams)[suuid] = tmpStream
 	}
 }
 
 func (obj *StreamListInfoST) coGe(suuid string) []av.CodecData {
 	for i := 0; i < 100; i++ {
 		obj.mutex.RLock()
-		tmpStream, ok := (*obj.Streams)[suuid]
+		tmpStream, ok := (obj.Streams)[suuid]
 		obj.mutex.RUnlock()
 		if !ok {
 			return nil
@@ -238,7 +243,7 @@ func (obj *StreamListInfoST) clAd(suuid string) (string, chan av.Packet) {
 	defer obj.mutex.Unlock()
 	cuuid := pseudoUUID()
 	chAvQueue := make(chan av.Packet, 100)
-	(*obj.Streams)[suuid].Cl[cuuid] = avQueue{c: chAvQueue}
+	(obj.Streams)[suuid].Cl[cuuid] = avQueue{c: chAvQueue}
 	return cuuid, chAvQueue
 }
 
@@ -247,7 +252,7 @@ func (obj *StreamListInfoST) list() (string, []string) {
 	defer obj.mutex.Unlock()
 	var res []string
 	var first string
-	for iSuuid := range *obj.Streams {
+	for iSuuid := range obj.Streams {
 		if first == "" {
 			first = iSuuid
 		}
@@ -260,7 +265,7 @@ func (obj *StreamListInfoST) list_url() []string {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	var res []string
-	for iSuuid, tmpStream := range *obj.Streams {
+	for iSuuid, tmpStream := range obj.Streams {
 
 		res = append(res, iSuuid+", "+tmpStream.URL)
 	}
@@ -270,8 +275,8 @@ func (obj *StreamListInfoST) list_url() []string {
 func (obj *StreamListInfoST) clDe(suuid, cuuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	if _, ok := (*obj.Streams)[suuid]; ok {
-		delete((*obj.Streams)[suuid].Cl, cuuid)
+	if _, ok := (obj.Streams)[suuid]; ok {
+		delete((obj.Streams)[suuid].Cl, cuuid)
 	}
 }
 
@@ -283,11 +288,11 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 	var streamToDelete []string //group of iSuuid
 
 	//same suuid -> check
-	for iSuuid, oldStream := range *obj.Streams {
+	for iSuuid, oldStream := range obj.Streams {
 		if newStream, ok := (*newStreamsList)[iSuuid]; ok {
 			if oldStream.URL != newStream.URL { //different -> change
 				oldStream.URL = newStream.URL
-				(*obj.Streams)[iSuuid] = oldStream
+				(obj.Streams)[iSuuid] = oldStream
 				if !isListChanged {
 					isListChanged = true
 				}
@@ -300,7 +305,7 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 	//no suuid ->delete
 	for _, iSuuid := range streamToDelete {
-		delete((*obj.Streams), iSuuid)
+		delete((obj.Streams), iSuuid)
 		if !isListChanged {
 			isListChanged = true
 		}
@@ -308,7 +313,7 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 	//new suuid ->add
 	for iSuuid, newStream := range *newStreamsList {
-		(*obj.Streams)[iSuuid] = newStream
+		(obj.Streams)[iSuuid] = newStream
 		if !isListChanged {
 			isListChanged = true
 		}
@@ -347,4 +352,76 @@ func pseudoUUID() (uuid string) {
 	}
 	uuid = fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 	return
+}
+
+/////
+
+// type StreamListST struct {
+// 	mutex         sync.RWMutex
+// 	Streams       StreamsMAP `json:"streams" groups:"config"`
+// 	Streams_extra StreamsMAP `json:"streams_extra" groups:"config"`
+// }
+
+const StreamListJsonFile = "stream_list.json"
+
+func (obj *StreamListInfoST) loadList() {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	data, err := os.ReadFile(StreamListJsonFile)
+	if err == nil {
+		err = json.Unmarshal(data, &obj)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for iUuid, tmpStream := range obj.Streams {
+			tmpStream.Channels = make(ChannelMAP)
+			tmpStream.Cl = make(AvqueueMAP)
+			tmpStream.Uuid = iUuid
+			tmpStream.Name = iUuid
+			tmpStream.Channels["0"] = ChannelST{""}
+			tmpStream.RunLock = false
+			//tmpStream.msgStop = make(chan struct{})
+			obj.Streams[iUuid] = tmpStream
+		}
+	} else {
+		obj.Streams = make(StreamsMAP)
+	}
+
+}
+
+func (obj *StreamListInfoST) SaveList() error {
+	// log.WithFields(logrus.Fields{
+	// 	"module": "stream_list",
+	// 	"func":   "NewStreamCore",
+	// }).Debugln("Saving configuration to", StreamListJsonFile)
+	v2, err := version.NewVersion("2.0.0")
+	if err != nil {
+		return err
+	}
+
+	options := &sheriff.Options{
+		Groups:     []string{"config"},
+		ApiVersion: v2,
+	}
+	data, err := sheriff.Marshal(options, obj)
+	if err != nil {
+		return err
+	}
+	//data := obj
+	JsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(StreamListJsonFile, JsonData, 0644)
+	if err != nil {
+		// log.WithFields(logrus.Fields{
+		// 	"module": "stream_list",
+		// 	"func":   "SaveList",
+		// 	"call":   "WriteFile",
+		// }).Errorln(err.Error())
+		return err
+	}
+
+	return nil
 }

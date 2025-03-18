@@ -265,7 +265,7 @@ func (obj *tCctvListMgr) start() (ot_result int) {
 func (obj *tCctvListMgr) updateList() bool {
 	isListChanged := obj.update_stream_list()
 	if isListChanged {
-		gConfig.SaveConfig()
+		gStreamListInfo.SaveList()
 		go restart()
 		return true
 	} else {
