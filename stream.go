@@ -33,7 +33,7 @@ func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAud
 	}
 	defer RTSPClient.Close()
 	if RTSPClient.CodecData != nil {
-		gStreamListInfo.coAd(suuid, RTSPClient.CodecData)
+		gStreamListInfo.codecSet(suuid, RTSPClient.CodecData)
 	}
 	var AudioOnly bool
 	if len(RTSPClient.CodecData) == 1 && RTSPClient.CodecData[0].Type().IsAudio() {
@@ -57,7 +57,7 @@ func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAud
 		case signals := <-RTSPClient.Signals:
 			switch signals {
 			case rtspv2.SignalCodecUpdate:
-				gStreamListInfo.coAd(suuid, RTSPClient.CodecData)
+				gStreamListInfo.codecSet(suuid, RTSPClient.CodecData)
 			case rtspv2.SignalStreamRTPStop:
 				return ErrorStreamExitRtspDisconnect
 			}

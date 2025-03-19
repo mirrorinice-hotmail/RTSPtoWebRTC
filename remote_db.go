@@ -24,7 +24,7 @@ const (
 
 const (
 	col_mgr_no      = "mgr_no"
-	col_ip_addr     = "ip_addr"
+	col_cctv_ip     = "ip_addr"
 	col_port_num    = "port_num"
 	col_stream_path = "stream_path"
 	col_stream_pw   = "stream_pw"
@@ -78,7 +78,8 @@ func (obj *tCctvListMgr) update_stream_list() bool {
 		col_stream_id + "," +
 		col_rtsp_01 + "," +
 		//col_rtsp_02 + "," +
-		col_cctv_nm +
+		col_cctv_nm + "," +
+		col_cctv_ip +
 		" FROM " + obj.DbmsInfo.TableName
 	fmt.Printf("sql : query(%s)\n", query)
 	rows, err := remote_db.Query(query)
@@ -98,7 +99,7 @@ func (obj *tCctvListMgr) db_add(db *sql.DB, in_no string) bool {
 	}
 	query_action := "INSERT INTO"
 	val_mgr_no := in_no
-	val_ip_addr := "10.10.0." + val_mgr_no
+	val_cctv_ip := "10.10.0." + val_mgr_no
 	val_port_num := "5432"
 	val_stream_path := "rtsp://10.10.0.12:5564/" + val_mgr_no + "/stream01"
 	val_cctv_nm := "CCTV_" + val_mgr_no
@@ -110,7 +111,7 @@ func (obj *tCctvListMgr) db_add(db *sql.DB, in_no string) bool {
 	query := query_action + " " + obj.DbmsInfo.TableName +
 		" (" +
 		col_mgr_no + ", " +
-		col_ip_addr + ", " +
+		col_cctv_ip + ", " +
 		col_port_num + ", " +
 		col_cctv_nm + ", " +
 		col_stream_path + ", " +
@@ -124,7 +125,7 @@ func (obj *tCctvListMgr) db_add(db *sql.DB, in_no string) bool {
 	log.Println(name, ": db add(", query, ")")
 	_, err := db.Exec(query,
 		val_mgr_no,
-		val_ip_addr,
+		val_cctv_ip,
 		val_port_num,
 		val_cctv_nm,
 		val_stream_path,
@@ -283,8 +284,8 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 	}()
 
 	for rows.Next() {
-		var val_stream_id, val_rtsp_01, val_cctv_nm string
-		err := rows.Scan(&val_stream_id, &val_rtsp_01, &val_cctv_nm)
+		var val_stream_id, val_rtsp_01, val_cctv_nm, val_cctv_ip string
+		err := rows.Scan(&val_stream_id, &val_rtsp_01, &val_cctv_nm, &val_cctv_ip)
 		if err != nil {
 			panic(err)
 		}
@@ -293,7 +294,8 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 
 		tmpStream := StreamST{
 			Uuid:         val_stream_id,
-			Name:         val_stream_id,
+			Name:         val_cctv_nm,
+			CctvIp:       val_cctv_ip,
 			Channels:     make(ChannelMAP),
 			URL:          val_rtsp_01,
 			Status:       false,
@@ -301,7 +303,7 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 			DisableAudio: true,
 			Debug:        false,
 			Codecs:       nil,
-			Cl:           make(AvqueueMAP),
+			avQue:        make(AvqueueMAP),
 			RunLock:      false,
 			//msgStop:      make(chan struct{}),
 		}

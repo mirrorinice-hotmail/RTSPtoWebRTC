@@ -104,7 +104,7 @@ func HTTPAPIStreamList(c *gin.Context) {
 // edit
 func HTTPAPIStreamEdit(c *gin.Context) {
 	strSuuid := c.Param("uuid")
-	if !gStreamListInfo.ext(strSuuid) {
+	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
@@ -145,7 +145,7 @@ func HTTPAPIStreamAdd(c *gin.Context) {
 // delete
 func HTTPAPIStreamDelete(c *gin.Context) {
 	strSuuid := c.Param("uuid")
-	if !gStreamListInfo.ext(strSuuid) {
+	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
@@ -165,7 +165,7 @@ func HTTPAPIStreamDelete(c *gin.Context) {
 // stream player
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	strSuuid := c.Param("uuid")
-	if !gStreamListInfo.ext(strSuuid) {
+	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
@@ -202,7 +202,7 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 // stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {
 	strSuuid := c.Param("uuid")
-	if !gStreamListInfo.ext(strSuuid) {
+	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
@@ -211,7 +211,7 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
-	codecs := gStreamListInfo.coGe(strSuuid)
+	codecs := gStreamListInfo.codecGet(strSuuid)
 	if codecs == nil {
 		return
 	}
@@ -275,7 +275,7 @@ func HTTPAPIStreamSave(c *gin.Context) {
 // stream video over WebRTC
 func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	strSuuid := c.PostForm("suuid")
-	if !gStreamListInfo.ext(strSuuid) {
+	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
@@ -284,7 +284,7 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
-	codecs := gStreamListInfo.coGe(strSuuid)
+	codecs := gStreamListInfo.codecGet(strSuuid)
 	if codecs == nil {
 		log.Println("Stream Codec Not Found")
 		return
@@ -314,8 +314,8 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	}
 	go func() {
 		strSuuid := c.PostForm("suuid")
-		cid, ch := gStreamListInfo.clAd(strSuuid)
-		defer gStreamListInfo.clDe(strSuuid, cid)
+		cid, ch := gStreamListInfo.avqueAdd(strSuuid)
+		defer gStreamListInfo.avqueDel(strSuuid, cid)
 		defer muxerWebRTC.Close()
 		var videoStart bool
 		noVideo := time.NewTimer(10 * time.Second)

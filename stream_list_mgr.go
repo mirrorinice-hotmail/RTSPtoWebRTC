@@ -36,6 +36,7 @@ type AvqueueMAP map[string]avQueue
 type StreamST struct {
 	Uuid         string
 	Name         string
+	CctvIp       string `json:"cctv_ip" groups:"config"`
 	Channels     ChannelMAP
 	URL          string `json:"url" groups:"config"`
 	Status       bool   `json:"status" groups:"config"`
@@ -43,7 +44,7 @@ type StreamST struct {
 	DisableAudio bool   `json:"disable_audio" groups:"config"`
 	Debug        bool   `json:"debug" groups:"config"`
 	Codecs       []av.CodecData
-	Cl           AvqueueMAP
+	avQue        AvqueueMAP
 	RunLock      bool
 	msgStop      chan struct{}
 }
@@ -167,9 +168,9 @@ func (obj *StreamListInfoST) RunUnlock(suuid string) {
 }
 
 func (obj *StreamListInfoST) HasViewer(suuid string) bool {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
-	if tmpStream, ok := (obj.Streams)[suuid]; ok && len(tmpStream.Cl) > 0 {
+	obj.mutex.RLock()
+	defer obj.mutex.RUnlock()
+	if tmpStream, ok := (obj.Streams)[suuid]; ok && len(tmpStream.avQue) > 0 {
 		return true
 	}
 	return false
@@ -182,21 +183,21 @@ func (obj *StreamListInfoST) cast(suuid string, pck av.Packet) {
 		return
 	}
 
-	for _, iQueue := range (obj.Streams)[suuid].Cl {
+	for _, iQueue := range (obj.Streams)[suuid].avQue {
 		if len(iQueue.c) < cap(iQueue.c) {
 			iQueue.c <- pck
 		}
 	}
 }
 
-func (obj *StreamListInfoST) ext(suuid string) bool {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
+func (obj *StreamListInfoST) exist(suuid string) bool {
+	obj.mutex.RLock()
+	defer obj.mutex.RUnlock()
 	_, ok := (obj.Streams)[suuid]
 	return ok
 }
 
-func (obj *StreamListInfoST) coAd(suuid string, codecs []av.CodecData) {
+func (obj *StreamListInfoST) codecSet(suuid string, codecs []av.CodecData) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	if tmpStream, ok := (obj.Streams)[suuid]; ok {
@@ -205,7 +206,7 @@ func (obj *StreamListInfoST) coAd(suuid string, codecs []av.CodecData) {
 	}
 }
 
-func (obj *StreamListInfoST) coGe(suuid string) []av.CodecData {
+func (obj *StreamListInfoST) codecGet(suuid string) []av.CodecData {
 	for i := 0; i < 100; i++ {
 		obj.mutex.RLock()
 		tmpStream, ok := (obj.Streams)[suuid]
@@ -236,13 +237,21 @@ func (obj *StreamListInfoST) coGe(suuid string) []av.CodecData {
 	return nil
 }
 
-func (obj *StreamListInfoST) clAd(suuid string) (string, chan av.Packet) {
+func (obj *StreamListInfoST) avqueAdd(suuid string) (string, chan av.Packet) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	cuuid := pseudoUUID()
 	chAvQueue := make(chan av.Packet, 100)
-	(obj.Streams)[suuid].Cl[cuuid] = avQueue{c: chAvQueue}
+	(obj.Streams)[suuid].avQue[cuuid] = avQueue{c: chAvQueue}
 	return cuuid, chAvQueue
+}
+
+func (obj *StreamListInfoST) avqueDel(suuid, cuuid string) {
+	obj.mutex.Lock()
+	defer obj.mutex.Unlock()
+	if _, ok := (obj.Streams)[suuid]; ok {
+		delete((obj.Streams)[suuid].avQue, cuuid)
+	}
 }
 
 func (obj *StreamListInfoST) list() (string, []string) {
@@ -260,22 +269,13 @@ func (obj *StreamListInfoST) list() (string, []string) {
 }
 
 func (obj *StreamListInfoST) list_url() []string {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
+	obj.mutex.RLock()
+	defer obj.mutex.RUnlock()
 	var res []string
 	for iSuuid, tmpStream := range obj.Streams {
-
 		res = append(res, iSuuid+", "+tmpStream.URL)
 	}
 	return res
-}
-
-func (obj *StreamListInfoST) clDe(suuid, cuuid string) {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
-	if _, ok := (obj.Streams)[suuid]; ok {
-		delete((obj.Streams)[suuid].Cl, cuuid)
-	}
 }
 
 func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
@@ -390,7 +390,7 @@ func (obj *StreamListInfoST) loadList() {
 		}
 		for iUuid, tmpStream := range obj.Streams {
 			tmpStream.Channels = make(ChannelMAP)
-			tmpStream.Cl = make(AvqueueMAP)
+			tmpStream.avQue = make(AvqueueMAP)
 			tmpStream.Uuid = iUuid
 			tmpStream.Name = iUuid
 			tmpStream.Channels["0"] = ChannelST{""}
@@ -405,6 +405,8 @@ func (obj *StreamListInfoST) loadList() {
 }
 
 func (obj *StreamListInfoST) SaveList() error {
+	obj.mutex.RLock()
+	defer obj.mutex.RUnlock()
 	// log.WithFields(logrus.Fields{
 	// 	"module": "stream_list",
 	// 	"func":   "NewStreamCore",
