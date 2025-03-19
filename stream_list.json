@@ -13,6 +13,13 @@
       "on_demand": false,
       "status": false,
       "url": "rtsp://210.99.70.120:1935/live/cctv001.stream"
+    },
+    "testout": {
+      "debug": false,
+      "disable_audio": true,
+      "on_demand": false,
+      "status": false,
+      "url": "rtsp://210.10.0.31:1935/rinowebrtc/cctv5.stream"
     }
   },
   "streams_extra": {

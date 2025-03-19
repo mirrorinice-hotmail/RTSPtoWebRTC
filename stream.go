@@ -42,7 +42,7 @@ func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAud
 	for {
 		select {
 		case <-msgStop:
-			log.Println("RTSPWorker : ErrorStreamExitNoViewer")
+			log.Println("RTSPWorker : ErrorStreamExitStopMsgReceived")
 			return ErrorStreamExitStopMsgReceived
 		case <-clientTest.C:
 			if OnDemand {

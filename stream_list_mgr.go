@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,21 +67,20 @@ func serveStreams() {
 // }
 
 func (obj *StreamListInfoST) RunAllPersistStream() {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
 	for iSuuid, tmpStream := range obj.Streams {
-		if tmpStream.RunLock {
-			continue
-		}
 		if tmpStream.OnDemand {
 			continue
 		}
-		log.Println("RunStream :", iSuuid)
+		obj.RunStream(iSuuid)
+	}
+}
 
-		tmpStream.RunLock = true
-		tmpStream.msgStop = make(chan struct{})
-		(obj.Streams)[iSuuid] = tmpStream
-		go RTSPWorkerLoop(tmpStream.msgStop, iSuuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
+func (obj *StreamListInfoST) StopAllStream() {
+	for iSuuid, tmpStream := range obj.Streams {
+		if tmpStream.OnDemand {
+			continue
+		}
+		obj.StopStream(iSuuid)
 	}
 }
 
@@ -123,13 +123,10 @@ func (obj *StreamListInfoST) StopStream(suuid string) bool {
 		return false
 	}
 	if !tmpStream.RunLock {
-		if tmpStream.OnDemand {
-			return true
-		}
-		return false
+		return tmpStream.OnDemand
 	}
 
-	log.Println("StopStream", suuid)
+	log.Println("Stream Stop :'", suuid, "'")
 	close(tmpStream.msgStop)
 	obj.mutex.Unlock()
 
@@ -158,6 +155,7 @@ func (obj *StreamListInfoST) DeleteStream(suuid string) bool {
 func (obj *StreamListInfoST) RunUnlock(suuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
+	log.Println("Unlock run :'", suuid, "'")
 	tmpStream, ok := (obj.Streams)[suuid]
 	if !ok {
 		return
@@ -325,12 +323,21 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) {
 	defer gStreamListInfo.RunUnlock(suuid)
+	//sleepCount := 1
 	for {
-		log.Println("Stream Try Connect", suuid)
+		sleepTime := 1 * time.Second
+		log.Println("Stream Connect : '", suuid, "'")
 		err := RTSPWorker(msgStop, suuid, url, OnDemand, DisableAudio, Debug)
 		if err != nil {
-			log.Println(err)
 			gConfig.LastError = err
+			strErr := err.Error()
+			log.Println("Stream Err : '", suuid, "' -", strErr)
+			if strings.Contains(strErr, "dial tcp") && strings.Contains(strErr, "i/o timeout") {
+				sleepTime = 10 * time.Second
+			} else {
+				sleepTime = 3 * time.Second
+			}
+
 			if err == ErrorStreamExitStopMsgReceived {
 				return
 			}
@@ -339,7 +346,15 @@ func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, Disabl
 			log.Println(ErrorStreamExitNoViewer)
 			return
 		}
-		time.Sleep(1 * time.Second)
+
+		select {
+		case <-msgStop:
+			err = ErrorStreamExitStopMsgReceived
+			log.Println("RTSPWorkerLoop err: ", err)
+			return
+		case <-time.After(sleepTime):
+		}
+		//time.Sleep(sleepTime)
 	}
 }
 
