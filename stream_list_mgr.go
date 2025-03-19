@@ -187,6 +187,52 @@ func (obj *StreamListInfoST) StopStream(suuid string) bool {
 	return true
 }
 
+func (obj *StreamListInfoST) SaveStream(saveParam *streamSaveParamST) bool {
+	// {Uuid : saveParam.Suuid, CctvName : saveParam.Name, RtspUrl : saveParam.Url,
+	// OnDemand : saveParam.OnDemand, Debug: saveParam.Debug }
+	Suuid := saveParam.Suuid
+	if obj.exist(Suuid) { //edit/change parameter
+		if !obj.StopStream(Suuid) {
+			return false
+		}
+		obj.mutex.Lock()
+		tmpStream := obj.Streams[Suuid]
+		tmpStream.CctvName = saveParam.Name
+		tmpStream.RtspUrl = saveParam.Url
+		tmpStream.OnDemand = saveParam.OnDemand
+		tmpStream.Debug = saveParam.Debug
+		obj.Streams[Suuid] = tmpStream
+		obj.mutex.Unlock()
+
+		obj.RunStream(Suuid)
+		return true
+
+	} else { //add parameter
+		obj.mutex.Lock()
+		tmpStream := StreamST{
+			Uuid:     Suuid,
+			CctvName: saveParam.Name,
+			//CctvIp:       "",
+			Channels: make(ChannelMAP),
+			RtspUrl:  saveParam.Url,
+			//Status:       false,
+			OnDemand:     saveParam.OnDemand,
+			DisableAudio: true,
+			Debug:        saveParam.Debug,
+			Codecs:       nil,
+			avQue:        make(AvqueueMAP),
+			RunLock:      false,
+		}
+		tmpStream.Channels["0"] = ChannelST{}
+		obj.Streams[Suuid] = tmpStream
+		obj.mutex.Unlock()
+
+		obj.RunStream(Suuid)
+		return true
+	}
+
+}
+
 func (obj *StreamListInfoST) DeleteStream(suuid string) bool {
 	if !obj.StopStream(suuid) {
 		return false
@@ -428,7 +474,6 @@ func (obj *StreamListInfoST) loadList() {
 			tmpStream.Uuid = iUuid
 			tmpStream.Channels["0"] = ChannelST{""}
 			tmpStream.RunLock = false
-			//tmpStream.msgStop = make(chan struct{})
 			obj.Streams[iUuid] = tmpStream
 		}
 

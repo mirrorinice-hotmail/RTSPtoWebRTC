@@ -26,18 +26,18 @@
             <div class="card-body">
               <div class="form-group">
                 <label for="exampleInputEmail1">Stream ID</label>
-                <input type="text" class="form-control" name="stream-id" id="stream-id" placeholder="  Enter stream ID"
-                  value="{{$stream.Uuid}}" {{if gt (len $stream.Uuid) 0 }} readonly{{end}}>
+                <input type="text" class="form-control" name="stream-id" id="stream-id" placeholder="   Enter stream ID"
+                  {{if gt (len $stream.Uuid) 0 }} readonly{{end}} value="{{$stream.Uuid}}">
               </div>
               <div class="form-group">
                 <label for="exampleInputEmail1">Stream name</label>
                 <input type="text" class="form-control" name="stream-name" id="stream-name"
-                  placeholder="  Enter stream name" value="{{$stream.CctvName}}">
+                  placeholder="  Enter stream name" value="{{$stream.Name}}">
               </div>
               <div class="form-group">
-                <label for="exampleInputEmail1">Stream url</label>
+                <label for="exampleInputPassword1">Stream url</label>
                 <input type="text" class="form-control" name="stream-url" id="stream-url"
-                  placeholder="  Enter stream url" value="{{$mainChannel.RtspUrl}}">
+                  placeholder="  Enter stream url" value="{{$mainChannel.URL}}">
               </div>
               <div class="form-group">
                 <div class="custom-control custom-switch">

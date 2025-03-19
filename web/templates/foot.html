@@ -20,6 +20,50 @@
 <!-- Main Footer -->
 
 </div>
+<script>
+
+  function Request_HttpApi(in_httpType, in_cmd, in_data) {
+
+    if (in_cmd == '') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Failure...',
+        text: 'Unnormal request',
+        confirmButtonText: 'Close',
+      })
+      return;
+    }
+
+    var ajaxParam = {
+      url: in_cmd,
+      type: in_httpType,
+      beforeSend: function (xhr) {
+        xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
+      },
+      success: function (response) {  //response handle
+        if (response.status == "success") {
+          window.location.href = '/stream/list';
+          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
+        } else {
+          msg = "'" + in_cmd + "' failure "
+          Swal.fire({
+            icon: 'error', title: 'Response...', text: msg,
+          })
+        }
+      },
+      error: function (e) {
+        console.log(e);
+      }
+    };
+
+    if (in_data != null) {
+      ajaxParam.data = JSON.stringify(in_data);
+    }
+    $.ajax(ajaxParam);
+  }
+
+</script>
+
 <!-- ./wrapper -->
 <script src="/../static/plugins/jquery/jquery.min.js"></script>
 <script src="/../static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

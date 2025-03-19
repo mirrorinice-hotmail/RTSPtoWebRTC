@@ -122,33 +122,6 @@
     Request_HttpApi('GET', '/stream/delete/' + suuid, '')
   }
 
-  function Request_HttpApi(in_httpType, in_cmd, in_data) {
-
-    var ajaxParam = {
-      url: in_cmd,
-      type: in_httpType,
-      beforeSend: function (xhr) {
-        xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
-      },
-      success: function (response) {  //response handle
-        if (response.status == "success") {
-          window.location.href = '/stream/list';
-          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
-        } else {
-          msg = "'" + in_cmd + "' failure "
-          Swal.fire({
-            icon: 'error', title: 'Response...', text: msg,
-          })
-        }
-      },
-      error: function (e) {
-        console.log(e);
-      }
-    };
-
-    $.ajax(ajaxParam);
-  }
-
   function Request_UpdateList() {
 
     var ajaxParam = {

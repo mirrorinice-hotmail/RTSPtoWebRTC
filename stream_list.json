@@ -7,11 +7,11 @@
       "disable_audio": true,
       "on_demand": false,
       "status": false,
-      "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream"
+      "url": "rtsp://210.99.70.120:1935/live/cctv001.stream"
     },
     "cctv002": {
       "cctv_ip": "10.10.0.12",
-      "cctv_name": "CCTV_12",
+      "cctv_name": "충북",
       "debug": false,
       "disable_audio": true,
       "on_demand": false,

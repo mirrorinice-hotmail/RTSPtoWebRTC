@@ -308,7 +308,6 @@ func makeTemporalStreams(rows *sql.Rows) StreamsMAP {
 			Codecs:       nil,
 			avQue:        make(AvqueueMAP),
 			RunLock:      false,
-			//msgStop:      make(chan struct{}),
 		}
 		tmpStream.Channels["0"] = ChannelST{}
 		newStreamsList[val_stream_id] = tmpStream

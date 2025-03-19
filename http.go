@@ -229,6 +229,55 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 	log.Println("HTTPAPIServerStreamUpdateList: end")
 }
 
+type streamSaveParamST struct {
+	Suuid    string `json:"suuid" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	Url      string `json:"url" binding:"required"`
+	Debug    bool   `json:"debug"`
+	OnDemand bool   `json:"on_demand"`
+}
+
+// save stream info
+func HTTPAPIStreamSave(c *gin.Context) {
+	log.Println("HTTPAPIStreamSave start...")
+	authHeader := c.GetHeader("Authorization")
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
+
+	if authHeader != expectedAuth {
+		log.Println("HTTPAPIStreamSave error: Unau thorized...")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var saveParam streamSaveParamST
+	if err := c.ShouldBindJSON(&saveParam); err != nil {
+		log.Println("HTTPAPIStreamSave error: Invalid JSON format...")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
+		return
+	}
+
+	log.Printf("Received: suuid(%s) name(%s) url(%s) debug (%t) ondemand (%t)\n",
+		saveParam.Suuid,
+		saveParam.Name,
+		saveParam.Url,
+		saveParam.Debug,
+		saveParam.OnDemand)
+
+	gStreamListInfo.SaveStream(&saveParam)
+
+	if gStreamListInfo.SaveStream(&saveParam) {
+		gStreamListInfo.SaveList()
+		log.Println("HTTPAPIStreamSave: success")
+		c.JSON(http.StatusOK, gin.H{"status": "success"})
+
+	} else {
+		log.Println("HTTPAPIStreamSave: failure")
+		c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
+
+	}
+	log.Println("HTTPAPIStreamSave: end")
+}
+
 // stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {
 	strSuuid := c.Param("uuid")
@@ -265,43 +314,6 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 			return
 		}
 	}
-}
-
-type streamSaveParamST struct {
-	Suuid    string `json:"suuid" binding:"required"`
-	Name     string `json:"name" binding:"required"`
-	Url      string `json:"url" binding:"required"`
-	Debug    bool   `json:"debug"`
-	OnDemand bool   `json:"on_demand"`
-}
-
-// save stream info
-func HTTPAPIStreamSave(c *gin.Context) {
-	log.Println("HTTPAPIStreamSave start...")
-	authHeader := c.GetHeader("Authorization")
-	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
-
-	if authHeader != expectedAuth {
-		log.Println("HTTPAPIStreamSave error: Unau thorized...")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
-
-	var saveParam streamSaveParamST
-	if err := c.ShouldBindJSON(&saveParam); err != nil {
-		log.Println("HTTPAPIStreamSave error: Invalid JSON format...")
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
-		return
-	}
-
-	log.Printf("Received: suuid(%s) name(%s) url(%s) debug (%t) ondemand (%t)\n",
-		saveParam.Suuid,
-		saveParam.Name,
-		saveParam.Url,
-		saveParam.Debug,
-		saveParam.OnDemand)
-
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 // stream video over WebRTC
