@@ -19,26 +19,42 @@ import (
 
 /*"github.com/imdario/mergo"*/
 
-var gStreamListInfo StreamListInfoST
+func serveStreams() {
+	gStreamListInfo.RunAllPersistStream()
+	log.Println("serverStream Started")
+}
 
-// ///////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
+var gStreamListInfo = StreamListInfoST{
+	Streams:       make(StreamsMAP),
+	Streams_extra: make(StreamsMAP),
+	pseudoUUID: func() (uuid string) {
+		b := make([]byte, 16)
+		_, err := rand.Read(b)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			return
+		}
+		uuid = fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+		return
+	},
+}
+
 type StreamListInfoST struct {
 	mutex         sync.RWMutex
 	Streams       StreamsMAP `json:"streams" groups:"config"`
 	Streams_extra StreamsMAP `json:"streams_extra" groups:"config"`
 	//LastError error
+	pseudoUUID func() (uuid string)
 }
 
 type StreamsMAP map[string]StreamST
-
-type AvqueueMAP map[string]avQueue
-
 type StreamST struct {
 	Uuid         string
-	Name         string
+	CctvName     string `json:"cctv_name" groups:"config"`
 	CctvIp       string `json:"cctv_ip" groups:"config"`
 	Channels     ChannelMAP
-	URL          string `json:"url" groups:"config"`
+	RtspUrl      string `json:"url" groups:"config"`
 	Status       bool   `json:"status" groups:"config"`
 	OnDemand     bool   `json:"on_demand" groups:"config"`
 	DisableAudio bool   `json:"disable_audio" groups:"config"`
@@ -49,24 +65,53 @@ type StreamST struct {
 	msgStop      chan struct{}
 }
 
+func (obj *StreamST) WorkerLoop() {
+	defer gStreamListInfo.RunUnlock(obj.Uuid)
+	//sleepCount := 1
+	for {
+		sleepTime := 1 * time.Second
+		log.Println("Stream Connect : '", obj.Uuid, "'")
+		err := RTSPWorker(obj.msgStop, obj.Uuid, obj.RtspUrl, obj.OnDemand, obj.DisableAudio, obj.Debug)
+		if err != nil {
+			gConfig.LastError = err
+			strErr := err.Error()
+			log.Println("Stream Err : '", obj.Uuid, "' -", strErr)
+			if strings.Contains(strErr, "dial tcp") && strings.Contains(strErr, "i/o timeout") {
+				sleepTime = 10 * time.Second
+			} else {
+				sleepTime = 3 * time.Second
+			}
+
+			if err == ErrorStreamExit_StopMsgReceived {
+				return
+			}
+		}
+		if obj.OnDemand && !gStreamListInfo.HasViewer(obj.Uuid) {
+			log.Println(ErrorStreamExit_NoViewer)
+			return
+		}
+
+		select {
+		case <-obj.msgStop:
+			log.Println("WorkerLoop breaked: msg 'stop'")
+			return
+		case <-time.After(sleepTime):
+		}
+		//time.Sleep(sleepTime)
+	}
+}
+
 type ChannelMAP map[string]ChannelST
 type ChannelST struct {
 	Name string
 }
 
+type AvqueueMAP map[string]avQueue
 type avQueue struct {
 	c chan av.Packet
 }
 
-func serveStreams() {
-	gStreamListInfo.RunAllPersistStream()
-	log.Println("serverStream Started")
-}
-
-// func (obj *StreamListInfoST) init(stream *StreamsMAP) {
-// 	obj.Streams = stream
-// }
-
+// ////////////////////////////////////////////////////////////////////
 func (obj *StreamListInfoST) RunAllPersistStream() {
 	for iSuuid, tmpStream := range obj.Streams {
 		if tmpStream.OnDemand {
@@ -113,7 +158,7 @@ func (obj *StreamListInfoST) RunStream(suuid string) {
 	tmpStream.RunLock = true
 	tmpStream.msgStop = make(chan struct{})
 	(obj.Streams)[suuid] = tmpStream
-	go RTSPWorkerLoop(tmpStream.msgStop, suuid, tmpStream.URL, tmpStream.OnDemand, tmpStream.DisableAudio, tmpStream.Debug)
+	go tmpStream.WorkerLoop() //RTSPWorkerLoop(tmpStream...)
 }
 
 func (obj *StreamListInfoST) StopStream(suuid string) bool {
@@ -197,7 +242,7 @@ func (obj *StreamListInfoST) exist(suuid string) bool {
 	return ok
 }
 
-func (obj *StreamListInfoST) codecSet(suuid string, codecs []av.CodecData) {
+func (obj *StreamListInfoST) setCodec(suuid string, codecs []av.CodecData) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	if tmpStream, ok := (obj.Streams)[suuid]; ok {
@@ -206,7 +251,7 @@ func (obj *StreamListInfoST) codecSet(suuid string, codecs []av.CodecData) {
 	}
 }
 
-func (obj *StreamListInfoST) codecGet(suuid string) []av.CodecData {
+func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
 	for i := 0; i < 100; i++ {
 		obj.mutex.RLock()
 		tmpStream, ok := (obj.Streams)[suuid]
@@ -237,16 +282,16 @@ func (obj *StreamListInfoST) codecGet(suuid string) []av.CodecData {
 	return nil
 }
 
-func (obj *StreamListInfoST) avqueAdd(suuid string) (string, chan av.Packet) {
+func (obj *StreamListInfoST) addAvque(suuid string) (string, chan av.Packet) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
-	cuuid := pseudoUUID()
+	cuuid := obj.pseudoUUID()
 	chAvQueue := make(chan av.Packet, 100)
 	(obj.Streams)[suuid].avQue[cuuid] = avQueue{c: chAvQueue}
 	return cuuid, chAvQueue
 }
 
-func (obj *StreamListInfoST) avqueDel(suuid, cuuid string) {
+func (obj *StreamListInfoST) delAvque(suuid, cuuid string) {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 	if _, ok := (obj.Streams)[suuid]; ok {
@@ -254,20 +299,16 @@ func (obj *StreamListInfoST) avqueDel(suuid, cuuid string) {
 	}
 }
 
-func (obj *StreamListInfoST) list() (string, []string) {
-	obj.mutex.Lock()
-	defer obj.mutex.Unlock()
-	var res []string
-	var first string
+func (obj *StreamListInfoST) GetFirstStreamUuid() (uuid string, result bool) {
+	obj.mutex.RLock()
+	defer obj.mutex.RUnlock()
 	for iSuuid := range obj.Streams {
-		if first == "" {
-			first = iSuuid
-		}
-		res = append(res, iSuuid)
+		return iSuuid, true
 	}
-	return first, res
+	return "", false
 }
 
+/*
 func (obj *StreamListInfoST) list_url() []string {
 	obj.mutex.RLock()
 	defer obj.mutex.RUnlock()
@@ -276,9 +317,9 @@ func (obj *StreamListInfoST) list_url() []string {
 		res = append(res, iSuuid+", "+tmpStream.URL)
 	}
 	return res
-}
+}*/
 
-func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
+func (obj *StreamListInfoST) apply_to_list(newStreamsList StreamsMAP) bool {
 	obj.mutex.Lock()
 	defer obj.mutex.Unlock()
 
@@ -287,15 +328,24 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 	//same suuid -> check
 	for iSuuid, oldStream := range obj.Streams {
-		if newStream, ok := (*newStreamsList)[iSuuid]; ok {
-			if oldStream.URL != newStream.URL { //different -> change
-				oldStream.URL = newStream.URL
+		if newStream, ok := (newStreamsList)[iSuuid]; ok {
+			change_found := false
+			if oldStream.RtspUrl != newStream.RtspUrl { //different -> change
+				change_found = true
+				oldStream.RtspUrl = newStream.RtspUrl
+			}
+			if oldStream.CctvName != newStream.CctvName { //different -> change
+				change_found = true
+				oldStream.CctvName = newStream.CctvName
+			}
+
+			if change_found {
 				(obj.Streams)[iSuuid] = oldStream
 				if !isListChanged {
 					isListChanged = true
 				}
 			}
-			delete(*newStreamsList, iSuuid)
+			delete(newStreamsList, iSuuid)
 		} else {
 			streamToDelete = append(streamToDelete, iSuuid)
 		}
@@ -310,7 +360,7 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 	}
 
 	//new suuid ->add
-	for iSuuid, newStream := range *newStreamsList {
+	for iSuuid, newStream := range newStreamsList {
 		(obj.Streams)[iSuuid] = newStream
 		if !isListChanged {
 			isListChanged = true
@@ -321,7 +371,7 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList *StreamsMAP) bool {
 
 }
 
-func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) {
+/*func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) {
 	defer gStreamListInfo.RunUnlock(suuid)
 	//sleepCount := 1
 	for {
@@ -338,44 +388,27 @@ func RTSPWorkerLoop(msgStop <-chan struct{}, suuid, url string, OnDemand, Disabl
 				sleepTime = 3 * time.Second
 			}
 
-			if err == ErrorStreamExitStopMsgReceived {
+			if err == ErrorStreamExit_StopMsgReceived {
 				return
 			}
 		}
 		if OnDemand && !gStreamListInfo.HasViewer(suuid) {
-			log.Println(ErrorStreamExitNoViewer)
+			log.Println(ErrorStreamExit_NoViewer)
 			return
 		}
 
 		select {
 		case <-msgStop:
-			err = ErrorStreamExitStopMsgReceived
+			err = ErrorStreamExit_StopMsgReceived
 			log.Println("RTSPWorkerLoop err: ", err)
 			return
 		case <-time.After(sleepTime):
 		}
 		//time.Sleep(sleepTime)
 	}
-}
+}*/
 
-func pseudoUUID() (uuid string) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return
-	}
-	uuid = fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	return
-}
-
-/////
-
-// type StreamListST struct {
-// 	mutex         sync.RWMutex
-// 	Streams       StreamsMAP `json:"streams" groups:"config"`
-// 	Streams_extra StreamsMAP `json:"streams_extra" groups:"config"`
-// }
+///////////////////////////////////////////
 
 const StreamListJsonFile = "stream_list.json"
 
@@ -387,21 +420,22 @@ func (obj *StreamListInfoST) loadList() {
 		err = json.Unmarshal(data, &obj)
 		if err != nil {
 			log.Fatalln(err)
+			return
 		}
 		for iUuid, tmpStream := range obj.Streams {
 			tmpStream.Channels = make(ChannelMAP)
 			tmpStream.avQue = make(AvqueueMAP)
 			tmpStream.Uuid = iUuid
-			tmpStream.Name = iUuid
 			tmpStream.Channels["0"] = ChannelST{""}
 			tmpStream.RunLock = false
 			//tmpStream.msgStop = make(chan struct{})
 			obj.Streams[iUuid] = tmpStream
 		}
-	} else {
-		obj.Streams = make(StreamsMAP)
-	}
 
+		if obj.Streams == nil {
+			obj.Streams = make(StreamsMAP)
+		}
+	}
 }
 
 func (obj *StreamListInfoST) SaveList() error {

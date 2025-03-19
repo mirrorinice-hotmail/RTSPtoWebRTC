@@ -10,56 +10,64 @@ import (
 )
 
 var (
-	ErrorStreamExitNoVideoOnStream = errors.New("Stream Exit No Video On Stream")
-	ErrorStreamExitRtspDisconnect  = errors.New("Stream Exit Rtsp Disconnect")
-	ErrorStreamExitNoViewer        = errors.New("Stream Exit On Demand No Viewer")
-	ErrorStreamExitStopMsgReceived = errors.New("Stream Exit Stop message received")
+	ErrorStreamExit_NoVideoOnStream = errors.New("stream Exit No Video On Stream")
+	ErrorStreamExit_RtspDisconnect  = errors.New("stream Exit Rtsp Disconnect")
+	ErrorStreamExit_NoViewer        = errors.New("stream Exit On Demand No Viewer")
+	ErrorStreamExit_StopMsgReceived = errors.New("stream Exit Stop message received")
 )
 
 func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAudio, Debug bool) error {
-	keyTest := time.NewTimer(20 * time.Second)
-	clientTest := time.NewTimer(20 * time.Second)
-	//add next TimeOut
-	// RTSPClient, err := rtspv2.Dial(
-	// 	rtspv2.RTSPClientOptions{
-	// 		URL: url, DisableAudio: DisableAudio, DialTimeout: 3 * time.Second, ReadWriteTimeout: 3 * time.Second, Debug: Debug})
-
+	/*	RTSPClient, err := rtspv2.Dial(
+		rtspv2.RTSPClientOptions{
+			URL: url,
+			DisableAudio: DisableAudio,
+			DialTimeout: 3 * time.Second,
+			ReadWriteTimeout: 3 * time.Second,
+			Debug: Debug})*/
 	RTSPClient, err := rtspv2.Dial2(
 		rtspv2.RTSPClientOptions{
-			URL: url, DisableAudio: DisableAudio, DialTimeout: 3 * time.Second, ReadWriteTimeout: 3 * time.Second, Debug: Debug},
+			URL:              url,
+			DisableAudio:     DisableAudio,
+			DialTimeout:      3 * time.Second,
+			ReadWriteTimeout: 3 * time.Second,
+			Debug:            Debug},
 		"0.0.0.0:0")
 	if err != nil {
 		return err
 	}
 	defer RTSPClient.Close()
 	if RTSPClient.CodecData != nil {
-		gStreamListInfo.codecSet(suuid, RTSPClient.CodecData)
+		gStreamListInfo.setCodec(suuid, RTSPClient.CodecData)
 	}
 	var AudioOnly bool
 	if len(RTSPClient.CodecData) == 1 && RTSPClient.CodecData[0].Type().IsAudio() {
 		AudioOnly = true
 	}
+
+	//add next TimeOut
+	keyTest := time.NewTimer(20 * time.Second)
+	clientTest := time.NewTimer(20 * time.Second)
 	for {
 		select {
 		case <-msgStop:
-			log.Println("RTSPWorker : ErrorStreamExitStopMsgReceived")
-			return ErrorStreamExitStopMsgReceived
+			log.Println("RTSPWorker : ErrorStreamExit_StopMsgReceived")
+			return ErrorStreamExit_StopMsgReceived
 		case <-clientTest.C:
 			if OnDemand {
 				if !gStreamListInfo.HasViewer(suuid) {
-					return ErrorStreamExitNoViewer
+					return ErrorStreamExit_NoViewer
 				} else {
 					clientTest.Reset(20 * time.Second)
 				}
 			}
 		case <-keyTest.C:
-			return ErrorStreamExitNoVideoOnStream
+			return ErrorStreamExit_NoVideoOnStream
 		case signals := <-RTSPClient.Signals:
 			switch signals {
 			case rtspv2.SignalCodecUpdate:
-				gStreamListInfo.codecSet(suuid, RTSPClient.CodecData)
+				gStreamListInfo.setCodec(suuid, RTSPClient.CodecData)
 			case rtspv2.SignalStreamRTPStop:
-				return ErrorStreamExitRtspDisconnect
+				return ErrorStreamExit_RtspDisconnect
 			}
 		case packetAV := <-RTSPClient.OutgoingPacketQueue:
 			if AudioOnly || packetAV.IsKeyFrame {

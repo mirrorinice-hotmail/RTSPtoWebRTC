@@ -36,18 +36,24 @@
       <div class="row mt-3">
         <div class="col-9" id="{{ $key }}">
           <div class="card-header">
-            <h3 class="card-title one-line-header" style="margin-right: 100px;">{{.Name}}</h3>
+            <h2 class="card-title one-line-header" style="margin-right: 30px;">{{$key}}</h2>
+            <h2 class="card-title one-line-header" style="margin-right: 100px;">{{$value.CctvName}}</h2>
             <button class="btn"
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white;  margin-right: 10px;"
-              onclick="OpenInnerVideo({{ $key }})">
-              <i class="fas fa-play"></i> Preview
+              onclick="OpenInnerVideo({{ $key }})"> <i class="fas fa-play"></i> Preview
             </button>
             <a class="btn"
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white; margin-right: 10px;"
-              href="/stream/edit/{{$key}}"> <i class="fas fa-pen"></i> Edit</a>
-            <a class="btn"
+              href="/stream/edit/{{$key}}"> <i class="fas fa-pen"></i> Edit
+            </a>
+            <!-- <a class="btn"
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white; margin-right: 10px;"
-              href="/stream/delete/{{$key}}"> <i class="fas fa-pen"></i> Delete</a>
+              href="/stream/delete/{{$key}}"> <i class="fas fa-pen"></i> Delete
+            </a> -->
+            <button class="btn"
+              style="width: 100px; height: 35px ;background-color: #2c312c; color: white;  margin-right: 10px;"
+              onclick="DeleteStream({{ $key }})"> <i class="fas fa-trash"></i> Delete
+            </button>
           </div>
         </div>
       </div>
@@ -97,6 +103,7 @@
     const div_video = document.getElementById("remoteVideos");
     div_video.setAttribute("hidden", "");
   }
+
   function OpenInnerVideo(in_value) {
     const inputElement = document.getElementById('suuid');
     inputElement.value = in_value;
@@ -105,10 +112,41 @@
     div_video.removeAttribute("hidden");
   }
 
-  const req_update_list = "update_stream"
   function UpdateList() {
     CloseInnerVideo();
-    Request_UpdateList();
+    //Request_UpdateList();
+    Request_HttpApi('GET', '/stream/updatelist', '')
+  }
+
+  function DeleteStream(suuid) {
+    Request_HttpApi('GET', '/stream/delete/' + suuid, '')
+  }
+
+  function Request_HttpApi(in_httpType, in_cmd, in_data) {
+
+    var ajaxParam = {
+      url: in_cmd,
+      type: in_httpType,
+      beforeSend: function (xhr) {
+        xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
+      },
+      success: function (response) {  //response handle
+        if (response.status == "success") {
+          window.location.href = '/stream/list';
+          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
+        } else {
+          msg = "'" + in_cmd + "' failure "
+          Swal.fire({
+            icon: 'error', title: 'Response...', text: msg,
+          })
+        }
+      },
+      error: function (e) {
+        console.log(e);
+      }
+    };
+
+    $.ajax(ajaxParam);
   }
 
   function Request_UpdateList() {
@@ -117,7 +155,7 @@
       url: '/stream/updatelist',
       type: 'GET',
       beforeSend: function (xhr) {
-        xhr.setRequestHeader("Authorization", "Basic " + btoa("demo:demo"));
+        xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
       },
       success: function (response) {  //response handle
         if (response.status == "success") {

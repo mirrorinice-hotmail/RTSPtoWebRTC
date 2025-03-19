@@ -12,10 +12,9 @@ import (
 )
 
 func main() {
-	log.Println("--Start--1701")
+	log.Println("--Start--1901")
 	gConfig.loadConfig()
 	gStreamListInfo.loadList()
-	//gStreamListInfo.init(&gStreamList.Streams)
 	gCctvListMgr.init(&gConfig.Dbms)
 
 	go gCctvListMgr.start()
@@ -35,11 +34,9 @@ func main() {
 
 	bContinue := true
 	for bContinue {
-		select {
-		case <-done:
-			log.Println("--> end msg")
-			bContinue = false
-		}
+		<-done
+		log.Println("--> end msg")
+		bContinue = false
 	}
 	log.Println("--End--")
 }

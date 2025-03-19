@@ -4,7 +4,7 @@ $(document).ready(() => {
     $('input[name=defaultPlayer]').val([localStorage.getItem('defaultPlayer')]);
   }
 })
-$('input[name=defaultPlayer]').on('change', function() {
+$('input[name=defaultPlayer]').on('change', function () {
   localStorage.setItem('defaultPlayer', $(this).val());
 })
 
@@ -131,13 +131,13 @@ function goRequest(method, uuid, data) {
     url: path,
     type: type,
     dataType: 'json',
-    beforeSend: function(xhr) {
-      xhr.setRequestHeader("Authorization", "Basic " + btoa("demo:demo"));
+    beforeSend: function (xhr) {
+      xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
     },
-    success: function(response) {
+    success: function (response) {
       goRequestHandle(method, response, uuid);
     },
-    error: function(e) {
+    error: function (e) {
       console.log(e);
     }
   };
@@ -188,7 +188,7 @@ function goRequestHandle(method, response, uuid) {
 
       if (response.status == 1) {
         $('#' + uuid).remove();
-        delete(streams[uuid]);
+        delete (streams[uuid]);
         $('#stream-counter').html(Object.keys(streams).length);
         Swal.fire(
           'Deleted!',
@@ -210,7 +210,7 @@ function goRequestHandle(method, response, uuid) {
         $('#stream-counter').html(Object.keys(streams).length);
         if (Object.keys(streams).length > 0) {
 
-          $.each(streams, function(uuid, param) {
+          $.each(streams, function (uuid, param) {
             if ($('#' + uuid).length == 0) {
               $('.streams').append(streamHtmlTemplate(uuid, param.name));
             }
@@ -225,27 +225,27 @@ function goRequestHandle(method, response, uuid) {
 
 }
 
-function getImageBase64(videoEl){
-    const canvas = document.createElement("canvas");
-    canvas.width = videoEl.videoWidth;
-    canvas.height = videoEl.videoHeight;
-    canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
-    const dataURL = canvas.toDataURL();
-    canvas.remove();
-    return dataURL;
+function getImageBase64(videoEl) {
+  const canvas = document.createElement("canvas");
+  canvas.width = videoEl.videoWidth;
+  canvas.height = videoEl.videoHeight;
+  canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL();
+  canvas.remove();
+  return dataURL;
 }
 
-function downloadBase64Image(base64Data){
-    const a = document.createElement("a");
-    a.href = base64Data;
-    a.download = "screenshot.png";
-    a.click();
-    a.remove();
+function downloadBase64Image(base64Data) {
+  const a = document.createElement("a");
+  a.href = base64Data;
+  a.download = "screenshot.png";
+  a.click();
+  a.remove();
 }
 
 
 function makePic(video_element, uuid, chan) {
-  if (typeof(video_element) === "undefined") {
+  if (typeof (video_element) === "undefined") {
     video_element = $("#videoPlayer")[0];
   }
   ratio = video_element.videoWidth / video_element.videoHeight;
@@ -268,7 +268,7 @@ function makePic(video_element, uuid, chan) {
   }
 
   var channel = $('#channel').val() || chan || 0;
-  if (typeof(images[uid]) === "undefined") {
+  if (typeof (images[uid]) === "undefined") {
     images[uid] = {};
   }
   images[uid][channel] = imageData;
@@ -280,8 +280,8 @@ function localImages() {
   var images = localStorage.getItem('imagesNew');
   if (images != null) {
     images = JSON.parse(images);
-    $.each(images, function(k, v) {
-      $.each(v, function(channel, img) {
+    $.each(images, function (k, v) {
+      $.each(v, function (channel, img) {
         $('#' + k).find('.stream-img[channel="' + channel + '"]').attr('src', img);
       })
 

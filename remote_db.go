@@ -8,19 +8,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var gCctvListMgr tCctvListMgr
+
+////////////////////////////////////
+
 const (
 	CCTVLISTMGR_END = iota + 1
 	CCTVLISTMGR_UPDATE
 )
 
-const (
-	test_host      = "localhost"
-	test_port      = 5432
-	test_user      = "postgres"
-	test_pw        = "rino1234"
-	test_dbname    = "test_rino_cctv_list"
-	test_tablename = "tbl_cctv_info"
-)
+// const (
+// 	test_host      = "localhost"
+// 	test_port      = 5432
+// 	test_user      = "postgres"
+// 	test_pw        = "rino1234"
+// 	test_dbname    = "test_rino_cctv_list"
+// 	test_tablename = "tbl_cctv_info"
+// )
 
 const (
 	col_mgr_no      = "mgr_no"
@@ -52,8 +56,6 @@ func (obj *tCctvListMgr) init(dbmsInfo *DbmsST) {
 	obj.Done_sig = make(chan struct{}, 1)
 }
 
-var gCctvListMgr tCctvListMgr
-
 func (obj *tCctvListMgr) db_open() *sql.DB {
 	psinfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", obj.DbmsInfo.Host, obj.DbmsInfo.Port, obj.DbmsInfo.User, obj.DbmsInfo.Pass, obj.DbmsInfo.Dbname)
 
@@ -67,10 +69,11 @@ func (obj *tCctvListMgr) db_open() *sql.DB {
 	return db
 }
 
-func (obj *tCctvListMgr) update_stream_list() bool {
+func (obj *tCctvListMgr) update_stream_list() StreamsMAP {
+	var newStream StreamsMAP
 	remote_db := obj.db_open()
 	if remote_db == nil {
-		return false
+		return newStream
 	}
 	defer remote_db.Close()
 
@@ -87,11 +90,12 @@ func (obj *tCctvListMgr) update_stream_list() bool {
 		panic(err)
 	}
 	defer rows.Close()
-	newStreams := makeTemporalStreams(rows)
-	isListChanged := gStreamListInfo.apply_to_list(newStreams)
-	return isListChanged
+	newStream = makeTemporalStreams(rows)
+	//isListChanged := gStreamListInfo.apply_to_list(newStreams)
+	return newStream
 }
 
+/*
 func (obj *tCctvListMgr) db_add(db *sql.DB, in_no string) bool {
 	const name = "cctvlist_mgr"
 	if in_no == "" {
@@ -219,7 +223,7 @@ func (obj *tCctvListMgr) db_result_print(err error, in_queryaction string) bool 
 		return true
 	}
 }
-
+*/
 // ///////////////////////////////////////////////////////////////////////////////
 
 func (obj *tCctvListMgr) request_stop_and_wait() {
@@ -227,9 +231,9 @@ func (obj *tCctvListMgr) request_stop_and_wait() {
 	<-obj.Done_sig
 }
 
-func (obj *tCctvListMgr) request_updatelist() {
-	obj.Comm_sig <- CCTVLISTMGR_UPDATE
-}
+// func (obj *tCctvListMgr) request_updatelist() {
+// 	obj.Comm_sig <- CCTVLISTMGR_UPDATE
+// }
 
 func (obj *tCctvListMgr) start() (ot_result int) {
 	const name = "cctvlist_mgr"
@@ -264,17 +268,16 @@ func (obj *tCctvListMgr) start() (ot_result int) {
 }
 
 func (obj *tCctvListMgr) updateList() bool {
-	isListChanged := obj.update_stream_list()
+	newStreams := obj.update_stream_list()
+	isListChanged := gStreamListInfo.apply_to_list(newStreams)
 	if isListChanged {
-		gStreamListInfo.SaveList()
-		go restart()
 		return true
 	} else {
 		return false
 	}
 }
 
-func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
+func makeTemporalStreams(rows *sql.Rows) StreamsMAP {
 
 	var newStreamsList = make(StreamsMAP)
 	defer func() {
@@ -294,10 +297,10 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 
 		tmpStream := StreamST{
 			Uuid:         val_stream_id,
-			Name:         val_cctv_nm,
+			CctvName:     val_cctv_nm,
 			CctvIp:       val_cctv_ip,
 			Channels:     make(ChannelMAP),
-			URL:          val_rtsp_01,
+			RtspUrl:      val_rtsp_01,
 			Status:       false,
 			OnDemand:     false,
 			DisableAudio: true,
@@ -310,5 +313,5 @@ func makeTemporalStreams(rows *sql.Rows) *StreamsMAP {
 		tmpStream.Channels["0"] = ChannelST{}
 		newStreamsList[val_stream_id] = tmpStream
 	}
-	return &newStreamsList
+	return newStreamsList
 }

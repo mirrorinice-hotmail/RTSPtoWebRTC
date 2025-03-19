@@ -67,24 +67,24 @@ func serveHTTP() {
 }
 
 // index
-func HTTPAPIServerIndex(c *gin.Context) {
-	_, all := gStreamListInfo.list()
-	if len(all) > 0 {
+/*func HTTPAPIServerIndex(c *gin.Context) {
+	firstUuid, ok := gStreamListInfo.GetFirstStreamUuid()
+	if ok {
 		c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
 		c.Header("Access-Control-Allow-Origin", "*")
-		c.Redirect(http.StatusMovedPermanently, "stream/player/"+all[0])
+		c.Redirect(http.StatusMovedPermanently, "stream/player/"+firstUuid)
 	} else {
 		c.HTML(http.StatusOK, "index.html", gin.H{
 			"port":    gConfig.HttpServer.HTTPPort,
 			"version": time.Now().String(),
 		})
 	}
-}
+}*/
 
 // list
 func HTTPAPIStreamList(c *gin.Context) {
-	_, all := gStreamListInfo.list()
-	if len(all) > 0 {
+	_, ok := gStreamListInfo.GetFirstStreamUuid()
+	if ok {
 		c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
 		c.Header("Access-Control-Allow-Origin", "*")
 	}
@@ -135,7 +135,7 @@ func HTTPAPIStreamAdd(c *gin.Context) {
 		"port":       gConfig.HttpServer.HTTPPort,
 		"streamJson": string(streamsJSON),
 		"streams":    gStreamListInfo.Streams,
-		"streamone":  StreamST{Uuid: "", Name: "", URL: ""},
+		"streamone":  StreamST{Uuid: "", CctvName: "", RtspUrl: ""},
 		"uuid":       "",
 		"version":    time.Now().String(),
 		"page":       "Add Stream",
@@ -144,6 +144,15 @@ func HTTPAPIStreamAdd(c *gin.Context) {
 
 // delete
 func HTTPAPIStreamDelete(c *gin.Context) {
+	log.Println("HTTPAPIStreamDelete: started")
+	authHeader := c.GetHeader("Authorization")
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
+
+	if authHeader != expectedAuth {
+		log.Println("HTTPAPIStreamDelete error: Unau thorized...")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
 	strSuuid := c.Param("uuid")
 	if !gStreamListInfo.exist(strSuuid) {
 		log.Println("Stream Not Found")
@@ -154,12 +163,17 @@ func HTTPAPIStreamDelete(c *gin.Context) {
 		return
 	}
 
-	if !gStreamListInfo.DeleteStream(strSuuid) {
-		return
-	}
+	if gStreamListInfo.DeleteStream(strSuuid) {
+		gStreamListInfo.SaveList()
+		log.Println("HTTPAPIStreamDelete: success")
+		c.JSON(http.StatusOK, gin.H{"status": "success"})
 
-	gStreamListInfo.SaveList()
-	HTTPAPIStreamList(c)
+	} else {
+		log.Println("HTTPAPIStreamDelete: failure")
+		c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
+
+	}
+	log.Println("HTTPAPIStreamDelete: end")
 }
 
 // stream player
@@ -188,7 +202,23 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 	//gCctvListMgr.request_updatelist()
 	log.Println("HTTPAPIServerStreamUpdateList: started")
-	if gCctvListMgr.updateList() {
+	authHeader := c.GetHeader("Authorization")
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
+
+	if authHeader != expectedAuth {
+		log.Println("HTTPAPIServerStreamUpdateList error: Unau thorized...")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	newStreams := gCctvListMgr.update_stream_list()
+	if newStreams != nil {
+		gStreamListInfo.StopAllStream()
+		isListChanged := gStreamListInfo.apply_to_list(newStreams)
+		if isListChanged {
+			gStreamListInfo.SaveList()
+		}
+		gStreamListInfo.RunAllPersistStream()
 		log.Println("HTTPAPIServerStreamUpdateList: sucess")
 		c.JSON(http.StatusOK, gin.H{"status": "success"})
 	} else {
@@ -211,7 +241,7 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
-	codecs := gStreamListInfo.codecGet(strSuuid)
+	codecs := gStreamListInfo.getCodec(strSuuid)
 	if codecs == nil {
 		return
 	}
@@ -239,6 +269,7 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 
 type streamSaveParamST struct {
 	Suuid    string `json:"suuid" binding:"required"`
+	Name     string `json:"name" binding:"required"`
 	Url      string `json:"url" binding:"required"`
 	Debug    bool   `json:"debug"`
 	OnDemand bool   `json:"on_demand"`
@@ -248,7 +279,7 @@ type streamSaveParamST struct {
 func HTTPAPIStreamSave(c *gin.Context) {
 	log.Println("HTTPAPIStreamSave start...")
 	authHeader := c.GetHeader("Authorization")
-	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("demo:demo"))
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
 
 	if authHeader != expectedAuth {
 		log.Println("HTTPAPIStreamSave error: Unau thorized...")
@@ -263,8 +294,9 @@ func HTTPAPIStreamSave(c *gin.Context) {
 		return
 	}
 
-	log.Printf("Received: suuid(%s) url(%s) debug (%t) ondemand (%t)\n",
+	log.Printf("Received: suuid(%s) name(%s) url(%s) debug (%t) ondemand (%t)\n",
 		saveParam.Suuid,
+		saveParam.Name,
 		saveParam.Url,
 		saveParam.Debug,
 		saveParam.OnDemand)
@@ -284,7 +316,7 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
-	codecs := gStreamListInfo.codecGet(strSuuid)
+	codecs := gStreamListInfo.getCodec(strSuuid)
 	if codecs == nil {
 		log.Println("Stream Codec Not Found")
 		return
@@ -314,8 +346,8 @@ func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	}
 	go func() {
 		strSuuid := c.PostForm("suuid")
-		cid, ch := gStreamListInfo.avqueAdd(strSuuid)
-		defer gStreamListInfo.avqueDel(strSuuid, cid)
+		cid, ch := gStreamListInfo.addAvque(strSuuid)
+		defer gStreamListInfo.delAvque(strSuuid, cid)
 		defer muxerWebRTC.Close()
 		var videoStart bool
 		noVideo := time.NewTimer(10 * time.Second)
