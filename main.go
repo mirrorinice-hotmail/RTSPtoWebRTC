@@ -7,12 +7,87 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/windows/svc"
 )
 
+type myService struct{}
+
+const serviceName = "rinortsp2web.service"
+
+var sigs chan os.Signal
+
+func (m *myService) Execute(args []string, req <-chan svc.ChangeRequest, status chan<- svc.Status) (svcSpecificEC bool, exitCode uint32) {
+	status <- svc.Status{State: svc.StartPending}
+
+	status <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
+
+	go mainWork()
+
+	loop := true
+	for loop {
+		select {
+		case r := <-req:
+			switch r.Cmd {
+			case svc.Stop, svc.Shutdown:
+				loop = false
+				status <- svc.Status{State: svc.StopPending}
+			}
+		default:
+			log.Println("Service is running...")
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	sigs <- syscall.SIGINT
+	status <- svc.Status{State: svc.Stopped}
+	return
+}
+
+//////////////////////////////
+
 func main() {
-	log.Println("--Start--1901")
+
+	////////////////
+	isWinSvc, err := svc.IsWindowsService()
+	if err != nil {
+		log.Fatalf("Failed to determine if running in an interactive session: %v", err)
+	}
+
+	if isWinSvc {
+		log.Printf("%s must be run as a Windows service.", serviceName)
+		err = svc.Run(serviceName, &myService{})
+		if err != nil {
+			log.Fatalf("Failed to run service: %v", err)
+		}
+	} else {
+		mainWork()
+	}
+}
+
+func mainWork() {
+	log.Println("--Start--25.03.20.2")
+	//////////
+	sigs = make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("main()..can't get executable path:", err)
+		return
+	}
+
+	exeDir := filepath.Dir(exePath)
+	err = os.Chdir(exeDir)
+	if err != nil {
+		fmt.Println("main()..can't set working path:", err)
+		return
+	}
+
 	gConfig.loadConfig()
 	gStreamListInfo.loadList()
 	gCctvListMgr.init(&gConfig.Dbms)
@@ -21,9 +96,6 @@ func main() {
 	go serveHTTP()
 	go serveStreams()
 
-	sigs := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigs
 		log.Println("system signal :", sig)

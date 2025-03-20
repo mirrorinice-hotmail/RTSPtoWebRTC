@@ -70,6 +70,7 @@ func (obj *tCctvListMgr) db_open() *sql.DB {
 }
 
 func (obj *tCctvListMgr) update_stream_list() StreamsMAP {
+
 	var newStream StreamsMAP
 	remote_db := obj.db_open()
 	if remote_db == nil {
@@ -91,8 +92,28 @@ func (obj *tCctvListMgr) update_stream_list() StreamsMAP {
 	}
 	defer rows.Close()
 	newStream = makeTemporalStreams(rows)
-	//isListChanged := gStreamListInfo.apply_to_list(newStreams)
 	return newStream
+}
+
+func (obj *tCctvListMgr) db_add_samples() bool {
+	remote_db := obj.db_open()
+	if remote_db == nil {
+		return false
+	}
+	defer remote_db.Close()
+
+	query_base := "INSERT INTO tbl_cctv_info (mgr_no, ip_addr, port_num, cctv_nm, stream_id, rtsp_02, rtsp_01) "
+
+	for i, val := range indsert_val_list {
+		query := query_base + val
+		fmt.Printf("%d : query(%s)\n", i, query)
+		_, err := remote_db.Query(query)
+		if err != nil {
+			panic(err)
+			return false
+		}
+	}
+	return true
 }
 
 /*
@@ -222,8 +243,8 @@ func (obj *tCctvListMgr) db_result_print(err error, in_queryaction string) bool 
 		fmt.Println(name, ": ", in_queryaction, ` success!`)
 		return true
 	}
-}
-*/
+} */
+
 // ///////////////////////////////////////////////////////////////////////////////
 
 func (obj *tCctvListMgr) request_stop_and_wait() {
@@ -313,4 +334,50 @@ func makeTemporalStreams(rows *sql.Rows) StreamsMAP {
 		newStreamsList[val_stream_id] = tmpStream
 	}
 	return newStreamsList
+}
+
+var indsert_val_list []string = []string{
+	"VALUES ('cctv_1_1_1' , '10.1.1.51' , '5432' , '합천읍 중흥길 25' , 'cctv_1_1_1' , 'rtsp://10.1.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_2_1' , '10.1.2.51' , '5432' , '합천읍 교동1길 24' , 'cctv_1_2_1' , 'rtsp://10.1.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_4_1' , '10.1.4.51' , '5432' , '합천읍 신소양1길 4' , 'cctv_1_4_1' , 'rtsp://10.1.4.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.4.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_6_1' , '10.1.6.51' , '5432' , '합천읍 영창1길 9' , 'cctv_1_6_1' , 'rtsp://10.1.6.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.6.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_8_1' , '10.1.8.51' , '5432' , '합천읍 서산길 56' , 'cctv_1_8_1' , 'rtsp://10.1.8.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.8.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_9_1' , '10.1.9.51' , '5432' , '합천읍 충효로 152, 102동 104호' , 'cctv_1_9_1' , 'rtsp://10.1.9.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.9.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_1_10_1' , '10.1.10.51' , '5432' , '합천읍 중앙로4길 16' , 'cctv_1_10_1' , 'rtsp://10.1.10.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.1.10.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_2_1_1' , '10.2.1.51' , '5432' , ' 봉산면 서부로 4071' , 'cctv_2_1_1' , 'rtsp://10.2.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.2.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_2_2_1' , '10.2.2.51' , '5432' , ' 봉산면 영서로 1528' , 'cctv_2_2_1' , 'rtsp://10.2.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.2.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_3_1_1' , '10.3.1.51' , '5432' , '묘산면 묘산로 163' , 'cctv_3_1_1' , 'rtsp://10.3.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.3.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_3_2_1' , '10.3.2.51' , '5432' , '묘산면 도옥길 40' , 'cctv_3_2_1' , 'rtsp://10.3.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.3.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_4_2_1' , '10.4.2.51' , '5432' , '가야면 가야시장로 50-29' , 'cctv_4_2_1' , 'rtsp://10.4.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.4.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_4_3_1' , '10.4.3.51' , '5432' , '가야면 가야시장로 95' , 'cctv_4_3_1' , 'rtsp://10.4.3.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.4.3.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_5_1_1' , '10.5.1.51' , '5432' , '야로면 가야산로 242-3' , 'cctv_5_1_1' , 'rtsp://10.5.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.5.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_5_2_1' , '10.5.2.51' , '5432' , '야로면 월광1길 1' , 'cctv_5_2_1' , 'rtsp://10.5.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.5.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_5_3_1' , '10.5.3.51' , '5432' , '야로면 매촌2길 5' , 'cctv_5_3_1' , 'rtsp://10.5.3.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.5.3.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_6_1_1' , '10.6.1.51' , '5432' , '율곡면 황강옥전로 626' , 'cctv_6_1_1' , 'rtsp://10.6.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.6.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_6_3_1' , '10.6.3.51' , '5432' , '율곡면 노양길 186-7' , 'cctv_6_3_1' , 'rtsp://10.6.3.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.6.3.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_7_1_1' , '10.7.1.51' , '5432' , '초계면 원당길 42' , 'cctv_7_1_1' , 'rtsp://10.7.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.7.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_7_3_1' , '10.7.3.51' , '5432' , '초계면 아막재로 37' , 'cctv_7_3_1' , 'rtsp://10.7.3.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.7.3.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_7_4_1' , '10.7.4.51' , '5432' , '초계면 내동3길 11' , 'cctv_7_4_1' , 'rtsp://10.7.4.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.7.4.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_7_5_1' , '10.7.5.51' , '5432' , '초계면 초계중앙로 26-1' , 'cctv_7_5_1' , 'rtsp://10.7.5.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.7.5.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_8_1_1' , '10.8.1.51' , '5432' , '쌍책면 오광대로 129-1' , 'cctv_8_1_1' , 'rtsp://10.8.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.8.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_8_2_1' , '10.8.2.51' , '5432' , '쌍책면 황강옥전로 1596' , 'cctv_8_2_1' , 'rtsp://10.8.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.8.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_9_1_1' , '10.9.1.51' , '5432' , '덕곡면 율원1길 19-4' , 'cctv_9_1_1' , 'rtsp://10.9.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.9.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_9_2_1' , '10.9.2.51' , '5432' , '덕곡면 포두1길 77' , 'cctv_9_2_1' , 'rtsp://10.9.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.9.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_10_1_1' , '10.10.1.51' , '5432' , '청덕면 가현길 69' , 'cctv_10_1_1' , 'rtsp://10.10.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.10.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_10_2_1' , '10.10.2.51' , '5432' , '청덕면 초곡길 151-1' , 'cctv_10_2_1' , 'rtsp://10.10.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.10.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_11_1_1' , '10.11.1.51' , '5432' , '적중면 중부2길 30-6' , 'cctv_11_1_1' , 'rtsp://10.11.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.11.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_11_2_1' , '10.11.2.51' , '5432' , '적중면 상부1길 30' , 'cctv_11_2_1' , 'rtsp://10.11.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.11.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_12_1_1' , '10.12.1.51' , '5432' , '대양면 정양2길 45' , 'cctv_12_1_1' , 'rtsp://10.12.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.12.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_12_2_1' , '10.12.2.51' , '5432' , '대양면 백암1길 17' , 'cctv_12_2_1' , 'rtsp://10.12.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.12.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_13_1_1' , '10.13.1.51' , '5432' , '쌍백면 외초1길 32' , 'cctv_13_1_1' , 'rtsp://10.13.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.13.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_13_2_1' , '10.13.2.51' , '5432' , '쌍백면 평구묵골길 377' , 'cctv_13_2_1' , 'rtsp://10.13.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.13.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_14_1_1' , '10.14.1.51' , '5432' , '삼가면 소오2길 2' , 'cctv_14_1_1' , 'rtsp://10.14.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.14.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_15_1_1' , '10.15.1.51' , '5432' , '가회면 황매산로 82' , 'cctv_15_1_1' , 'rtsp://10.15.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.15.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_16_1_1' , '10.16.1.51' , '5432' , '대병면 신성동길 22' , 'cctv_16_1_1' , 'rtsp://10.16.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.16.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_16_2_1' , '10.16.2.51' , '5432' , '대병면 금객1길 60' , 'cctv_16_2_1' , 'rtsp://10.16.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.16.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_17_1_1' , '10.17.1.51' , '5432' , '용주면 월평길 161' , 'cctv_17_1_1' , 'rtsp://10.17.1.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.17.1.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_17_2_1' , '10.17.2.51' , '5432' , '용주면 봉기길 26' , 'cctv_17_2_1' , 'rtsp://10.17.2.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.17.2.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_17_3_1' , '10.17.3.51' , '5432' , '용주면 고품1길 12-1' , 'cctv_17_3_1' , 'rtsp://10.17.3.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.17.3.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_17_4_1' , '10.17.4.51' , '5432' , '용주면 가호길 91' , 'cctv_17_4_1' , 'rtsp://10.17.4.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.17.4.51:554/Profile02/media.smp' )",
+	"VALUES ('cctv_17_5_1' , '10.17.5.51' , '5432' , '용주면 고품3길 27' , 'cctv_17_5_1' , 'rtsp://10.17.5.50:558/LiveChannel/00/media.smp' , 'rtsp://hcmanager:hap_1000!@10.17.5.51:554/Profile02/media.smp' )",
 }

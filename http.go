@@ -211,6 +211,15 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 		return
 	}
 
+	/*
+		if gCctvListMgr.db_add_samples() {
+			log.Println("HTTPAPIServerStreamUpdateList: sucess")
+			c.JSON(http.StatusOK, gin.H{"status": "success"})
+		} else {
+			log.Println("HTTPAPIServerStreamUpdateList: failure")
+			c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
+		}
+		/*/
 	newStreams := gCctvListMgr.update_stream_list()
 	if newStreams != nil {
 		gStreamListInfo.StopAllStream()
@@ -225,6 +234,7 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 		log.Println("HTTPAPIServerStreamUpdateList: failure")
 		c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
 	}
+	// */
 
 	log.Println("HTTPAPIServerStreamUpdateList: end")
 }
