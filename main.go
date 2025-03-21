@@ -10,70 +10,53 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
-
-	"golang.org/x/sys/windows/svc"
 )
 
-type myService struct{}
+//const serviceName = "rinortsp2web.service"
+//type myService struct{}
+// func (m *myService) Execute(args []string, req <-chan svc.ChangeRequest, status chan<- svc.Status) (svcSpecificEC bool, exitCode uint32) {
+// 	status <- svc.Status{State: svc.StartPending}
 
-const serviceName = "rinortsp2web.service"
+// 	status <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
 
-var sigs chan os.Signal
+// 	go mainWork()
 
-func (m *myService) Execute(args []string, req <-chan svc.ChangeRequest, status chan<- svc.Status) (svcSpecificEC bool, exitCode uint32) {
-	status <- svc.Status{State: svc.StartPending}
+// 	loop := true
+// 	for loop {
+// 		select {
+// 		case r := <-req:
+// 			switch r.Cmd {
+// 			case svc.Stop, svc.Shutdown:
+// 				loop = false
+// 				status <- svc.Status{State: svc.StopPending}
+// 			}
+// 		default:
+// 			log.Println("Service is running...")
+// 			time.Sleep(2 * time.Second)
+// 		}
+// 	}
 
-	status <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
-
-	go mainWork()
-
-	loop := true
-	for loop {
-		select {
-		case r := <-req:
-			switch r.Cmd {
-			case svc.Stop, svc.Shutdown:
-				loop = false
-				status <- svc.Status{State: svc.StopPending}
-			}
-		default:
-			log.Println("Service is running...")
-			time.Sleep(2 * time.Second)
-		}
-	}
-
-	sigs <- syscall.SIGINT
-	status <- svc.Status{State: svc.Stopped}
-	return
-}
+// 	sigs <- syscall.SIGINT
+// 	status <- svc.Status{State: svc.Stopped}
+// 	return
+// }
 
 //////////////////////////////
 
+var gSigs chan os.Signal
+
 func main() {
+	log.Println("--Start--25.03.21.1")
 
-	////////////////
-	isWinSvc, err := svc.IsWindowsService()
-	if err != nil {
-		log.Fatalf("Failed to determine if running in an interactive session: %v", err)
-	}
+	gSigs = make(chan os.Signal, 1)
 
-	if isWinSvc {
-		log.Printf("%s must be run as a Windows service.", serviceName)
-		err = svc.Run(serviceName, &myService{})
-		if err != nil {
-			log.Fatalf("Failed to run service: %v", err)
-		}
-	} else {
-		mainWork()
-	}
+	mainByOs()
 }
 
 func mainWork() {
-	log.Println("--Start--25.03.20.2")
-	//////////
-	sigs = make(chan os.Signal, 1)
+
 	done := make(chan bool, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(gSigs, syscall.SIGINT, syscall.SIGTERM)
 
 	exePath, err := os.Executable()
 	if err != nil {
@@ -97,7 +80,7 @@ func mainWork() {
 	go serveStreams()
 
 	go func() {
-		sig := <-sigs
+		sig := <-gSigs
 		log.Println("system signal :", sig)
 		closeall()
 		done <- true
