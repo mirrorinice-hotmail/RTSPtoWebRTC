@@ -25,6 +25,7 @@ func serveHTTP() {
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
+	router.StaticFS("/static", http.Dir("web/static"))
 
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
@@ -38,12 +39,14 @@ func serveHTTP() {
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
+		router.POST("/stream/uploadlist", HTTPAPIServerStreamUploadList)
 	}
+
+	//Webrtc Signalling
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 
-	router.StaticFS("/static", http.Dir("web/static"))
-
+	//service starting
 	log.Println("ServerHTTP start")
 	//*
 	serverHttp = &http.Server{
@@ -63,7 +66,6 @@ func serveHTTP() {
 	}
 	// */
 	log.Println("ServerHTTP stopped")
-
 }
 
 // index
@@ -200,7 +202,6 @@ func HTTPAPIServerStreamPlayer(c *gin.Context) {
 }
 
 func HTTPAPIServerStreamUpdateList(c *gin.Context) {
-	//gCctvListMgr.request_updatelist()
 	log.Println("HTTPAPIServerStreamUpdateList: started")
 	authHeader := c.GetHeader("Authorization")
 	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
@@ -240,11 +241,12 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 }
 
 type streamSaveParamST struct {
-	Suuid    string `json:"suuid" binding:"required"`
-	Name     string `json:"name" binding:"required"`
-	Url      string `json:"url" binding:"required"`
-	Debug    bool   `json:"debug"`
-	OnDemand bool   `json:"on_demand"`
+	Suuid     string `json:"suuid" binding:"required"`
+	Name      string `json:"name" binding:"required"`
+	RtspUrl   string `json:"url" binding:"required"`
+	RtspUrl_2 string `json:"url2"`
+	Debug     bool   `json:"debug"`
+	OnDemand  bool   `json:"on_demand"`
 }
 
 // save stream info
@@ -269,13 +271,11 @@ func HTTPAPIStreamSave(c *gin.Context) {
 	log.Printf("Received: suuid(%s) name(%s) url(%s) debug (%t) ondemand (%t)\n",
 		saveParam.Suuid,
 		saveParam.Name,
-		saveParam.Url,
+		saveParam.RtspUrl,
 		saveParam.Debug,
 		saveParam.OnDemand)
 
-	gStreamListInfo.SaveStream(&saveParam)
-
-	if gStreamListInfo.SaveStream(&saveParam) {
+	if gStreamListInfo.ApplyStream(&saveParam) {
 		gStreamListInfo.SaveList()
 		log.Println("HTTPAPIStreamSave: success")
 		c.JSON(http.StatusOK, gin.H{"status": "success"})
@@ -287,6 +287,32 @@ func HTTPAPIStreamSave(c *gin.Context) {
 	}
 	log.Println("HTTPAPIStreamSave: end")
 }
+
+func HTTPAPIServerStreamUploadList(c *gin.Context) {
+	log.Println("HTTPAPIServerStreamUploadList start...")
+	authHeader := c.GetHeader("Authorization")
+	expectedAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte("rino:ese"))
+
+	if authHeader != expectedAuth {
+		log.Println("HTTPAPIServerStreamUploadList error: Unau thorized...")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	var newStreams StreamsMAP
+	if err := c.ShouldBindJSON(&newStreams); err != nil {
+		log.Println("HTTPAPIServerStreamUploadList error: Invalid JSON format...")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format"})
+		return
+	}
+
+	log.Println("HTTPAPIStreamSave: failure")
+	c.JSON(http.StatusFailedDependency, gin.H{"status": "failure"})
+
+}
+
+/////////////////////////////////////////////////////////
+// web rtc signalling apis
 
 // stream codec
 func HTTPAPIServerStreamCodec(c *gin.Context) {

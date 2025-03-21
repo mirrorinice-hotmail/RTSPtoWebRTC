@@ -21,29 +21,54 @@
 
 </div>
 <script>
+  const CMD_SAVE_STREAM = 'save stream';
+  const CMD_UPDATE_LIST = 'update list';
+  const CMD_DELETE_STREAM = 'delete stream';
 
   function Request_HttpApi(in_httpType, in_cmd, in_data) {
+    api_url = "";
+    suuid = in_data;
 
-    if (in_cmd == '') {
-      Swal.fire({
-        icon: 'error',
-        title: 'Failure...',
-        text: 'Unnormal request',
-        confirmButtonText: 'Close',
-      })
-      return;
+    switch (in_cmd) {
+      case CMD_SAVE_STREAM:
+        api_url = '/stream/save';
+        break;
+      case CMD_UPDATE_LIST:
+        api_url = '/stream/updatelist';
+        break;
+      case CMD_DELETE_STREAM:
+        api_url = '/stream/delete/' + suuid + '';
+        break;
+      default:
+        Swal.fire({
+          icon: 'error',
+          title: 'Failure...',
+          text: 'Unnormal request',
+          confirmButtonText: 'Close',
+        })
+        return;
+        break;
     }
 
     var ajaxParam = {
-      url: in_cmd,
+      url: api_url,
       type: in_httpType,
       beforeSend: function (xhr) {
+        console.log("cmd: ", in_cmd, ", type:", in_httpType, ", api_url:'", api_url, "'");
         xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
       },
       success: function (response) {  //response handle
         if (response.status == "success") {
-          window.location.href = '/stream/list';
-          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
+
+          msg = "'" + in_cmd + "' success "
+          Swal.fire({
+            icon: 'success', title: 'Response...', text: msg,
+            timer: 1000,
+            showConfirmButton: true
+          }).then(() => {
+            window.location.href = '/stream/list';
+          });
+
         } else {
           msg = "'" + in_cmd + "' failure "
           Swal.fire({

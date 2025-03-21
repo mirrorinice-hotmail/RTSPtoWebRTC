@@ -98,6 +98,7 @@
 </script> -->
 
 <script>
+
   function CloseInnerVideo() {
     disconnect_webrtc_peer()
     const div_video = document.getElementById("remoteVideos");
@@ -114,38 +115,12 @@
 
   function UpdateList() {
     CloseInnerVideo();
-    //Request_UpdateList();
-    Request_HttpApi('GET', '/stream/updatelist', '')
+    //console.log('UpdateList - (GET,', CMD_UPDATE_LIST, "''")
+    Request_HttpApi('GET', CMD_UPDATE_LIST, '')
   }
 
   function DeleteStream(suuid) {
-    Request_HttpApi('GET', '/stream/delete/' + suuid, '')
-  }
-
-  function Request_UpdateList() {
-
-    var ajaxParam = {
-      url: '/stream/updatelist',
-      type: 'GET',
-      beforeSend: function (xhr) {
-        xhr.setRequestHeader("Authorization", "Basic " + btoa("rino:ese"));
-      },
-      success: function (response) {  //response handle
-        if (response.status == "success") {
-          window.location.href = '/stream/list';
-          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
-        } else {
-          Swal.fire({
-            icon: 'error', title: 'Oops...', text: 'Same mistake issset',
-          })
-        }
-      },
-      error: function (e) {
-        console.log(e);
-      }
-    };
-
-    $.ajax(ajaxParam);
+    Request_HttpApi('GET', CMD_DELETE_STREAM, suuid)
   }
 
 </script>

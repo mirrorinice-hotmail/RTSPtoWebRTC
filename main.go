@@ -49,25 +49,14 @@ func main() {
 	log.Println("--Start--25.03.21.1")
 
 	gSigs = make(chan os.Signal, 1)
+	signal.Notify(gSigs, syscall.SIGINT, syscall.SIGTERM)
 
 	mainByOs()
 }
 
 func mainWork() {
 
-	done := make(chan bool, 1)
-	signal.Notify(gSigs, syscall.SIGINT, syscall.SIGTERM)
-
-	exePath, err := os.Executable()
-	if err != nil {
-		fmt.Println("main()..can't get executable path:", err)
-		return
-	}
-
-	exeDir := filepath.Dir(exePath)
-	err = os.Chdir(exeDir)
-	if err != nil {
-		fmt.Println("main()..can't set working path:", err)
+	if !setWorkDirectory() {
 		return
 	}
 
@@ -79,6 +68,7 @@ func mainWork() {
 	go serveHTTP()
 	go serveStreams()
 
+	done := make(chan bool, 1)
 	go func() {
 		sig := <-gSigs
 		log.Println("system signal :", sig)
@@ -87,12 +77,7 @@ func mainWork() {
 	}()
 	log.Println("Awaiting End Signal")
 
-	bContinue := true
-	for bContinue {
-		<-done
-		log.Println("--> end msg")
-		bContinue = false
-	}
+	<-done
 	log.Println("--End--")
 }
 
@@ -106,6 +91,23 @@ func closeall() {
 	}
 	gCctvListMgr.request_stop_and_wait()
 
+}
+
+func setWorkDirectory() bool {
+	exePath, err := os.Executable()
+	if err != nil {
+		fmt.Println("main()..can't get executable path:", err)
+		return false
+	}
+
+	exeDir := filepath.Dir(exePath)
+	err = os.Chdir(exeDir)
+	if err != nil {
+		fmt.Println("main()..can't set working path:", err)
+		return false
+	}
+
+	return true
 }
 
 func restart() {

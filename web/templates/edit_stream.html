@@ -112,19 +112,46 @@
 {{template "foot.html" .}}
 
 <script>
-  const req_save_stream_info = "save_stream"
-
+  org_stream_id = ({{ .uuid }});
   function SaveStream() {
+    isNewStream = false;
+    if (org_stream_id == "") {
+      isNewStream = true;
+    }
+
     stream_id = $('#stream-id').val();
     stream_name = $('#stream-name').val(),
       stream_url = $('#stream-url').val(),
       console.log('SaveStream()....streamJson:' + {{.streamJson }});
+
   streamList = JSON.parse({{.streamJson }});
-  if (streamList.hasOwnProperty(stream_id)) {
-    console.log(`SaveStream()..:'` + stream_id + `' !!! exist`);
-  } else {
-    console.log(`SaveStream()..:'` + stream_id + `' ??? not exist`);
-    return;
+  if (isNewStream) {
+    if (streamList.hasOwnProperty(stream_id)) {
+      console.log(`SaveStream()..:'` + stream_id + `' ??? already exist`);
+      msg = "stream id(" + stream_id + ") ,already exists"
+      Swal.fire({
+        icon: 'error', title: 'Same Stream ID', text: msg,
+        timer: 3000,
+        showConfirmButton: true
+      })
+      return
+    } else {
+      console.log(`SaveStream()..:'` + stream_id + `' !!! new stream`);
+    }
+
+  }
+  else {
+    if (streamList.hasOwnProperty(stream_id)) {
+      console.log(`SaveStream()..:'` + stream_id + `' !!! exist`);
+    } else {
+      msg = "stream id(" + stream_id + ") ,not exists"
+      Swal.fire({
+        icon: 'error', title: 'Unknown Stream ID', text: msg,
+        timer: 3000,
+        showConfirmButton: true
+      })
+      return;
+    }
   }
 
   var params = {
@@ -142,28 +169,7 @@
   }
 
   //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
-  Request_HttpApi('POST', '/stream/save', params);
+  Request_HttpApi('POST', CMD_SAVE_STREAM, params);
   }
 
-
-
-
-  /*function goMyRequestHandle(method, response, suuid) {
-    //console.log("goMyRequestHandle()..." + method + " , " + response + " , " + suuid)
-    msgFailure = "'" + method + "' id(" + suuid + ")"
-    switch (method) {
-      case req_save_stream_info:
-        if (response.status == "success") {
-          window.location.href = '/stream/list';
-          // Swal.fire( 'Added!', 'Your stream has been Added.',  'success' );
-        } else {
-          Swal.fire({
-            icon: 'error', title: 'Failure...', text: msgFailure,
-          })
-        }
-        break;
-      default:
-
-    }
-  }*/
 </script>

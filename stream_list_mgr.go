@@ -52,10 +52,11 @@ type StreamsMAP map[string]StreamST
 type StreamST struct {
 	Uuid         string
 	CctvName     string `json:"cctv_name" groups:"config"`
-	CctvIp       string `json:"cctv_ip" groups:"config"`
+	CctvIp       string `json:"cctv_ip" groups:"config" `
 	Channels     ChannelMAP
-	RtspUrl      string `json:"url" groups:"config"`
-	Status       bool   `json:"status" groups:"config"`
+	RtspUrl      string `json:"url" groups:"config" binding:"required"`
+	RtspUrl_2    string `json:"url2" groups:"config"`
+	Status       byte   `json:"status" groups:"config"`
 	OnDemand     bool   `json:"on_demand" groups:"config"`
 	DisableAudio bool   `json:"disable_audio" groups:"config"`
 	Debug        bool   `json:"debug" groups:"config"`
@@ -187,8 +188,8 @@ func (obj *StreamListInfoST) StopStream(suuid string) bool {
 	return true
 }
 
-func (obj *StreamListInfoST) SaveStream(saveParam *streamSaveParamST) bool {
-	// {Uuid : saveParam.Suuid, CctvName : saveParam.Name, RtspUrl : saveParam.Url,
+func (obj *StreamListInfoST) ApplyStream(saveParam *streamSaveParamST) bool {
+	// {Uuid : saveParam.Suuid, CctvName : saveParam.Name, RtspUrl : saveParam.RtspUrl,
 	// OnDemand : saveParam.OnDemand, Debug: saveParam.Debug }
 	Suuid := saveParam.Suuid
 	if obj.exist(Suuid) { //edit/change parameter
@@ -198,7 +199,8 @@ func (obj *StreamListInfoST) SaveStream(saveParam *streamSaveParamST) bool {
 		obj.mutex.Lock()
 		tmpStream := obj.Streams[Suuid]
 		tmpStream.CctvName = saveParam.Name
-		tmpStream.RtspUrl = saveParam.Url
+		tmpStream.RtspUrl = saveParam.RtspUrl
+		tmpStream.RtspUrl_2 = saveParam.RtspUrl_2
 		tmpStream.OnDemand = saveParam.OnDemand
 		tmpStream.Debug = saveParam.Debug
 		obj.Streams[Suuid] = tmpStream
@@ -213,8 +215,9 @@ func (obj *StreamListInfoST) SaveStream(saveParam *streamSaveParamST) bool {
 			Uuid:     Suuid,
 			CctvName: saveParam.Name,
 			//CctvIp:       "",
-			Channels: make(ChannelMAP),
-			RtspUrl:  saveParam.Url,
+			Channels:  make(ChannelMAP),
+			RtspUrl:   saveParam.RtspUrl,
+			RtspUrl_2: saveParam.RtspUrl_2,
 			//Status:       false,
 			OnDemand:     saveParam.OnDemand,
 			DisableAudio: true,
@@ -379,6 +382,14 @@ func (obj *StreamListInfoST) apply_to_list(newStreamsList StreamsMAP) bool {
 			if oldStream.RtspUrl != newStream.RtspUrl { //different -> change
 				change_found = true
 				oldStream.RtspUrl = newStream.RtspUrl
+			}
+			// if oldStream.RtspUrl_2 != newStream.RtspUrl_2 { //different -> change
+			// 	change_found = true
+			// 	oldStream.RtspUrl_2 = newStream.RtspUrl_2
+			// }
+			if oldStream.Status != newStream.Status { //different -> change
+				change_found = true
+				oldStream.Status = newStream.Status
 			}
 			if oldStream.CctvName != newStream.CctvName { //different -> change
 				change_found = true
