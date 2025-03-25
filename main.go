@@ -46,7 +46,7 @@ import (
 var gSigs chan os.Signal
 
 func main() {
-	log.Println("--Start--25.03.21.1")
+	log.Println("--Start--25.03.25.1")
 
 	gSigs = make(chan os.Signal, 1)
 	signal.Notify(gSigs, syscall.SIGINT, syscall.SIGTERM)
