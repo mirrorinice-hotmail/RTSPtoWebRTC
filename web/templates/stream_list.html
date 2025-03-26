@@ -4,6 +4,7 @@
     <div class="row mb-2">
       <div class="col-sm-6">
         <h1 class="m-0 text-dark">Streams list</h1>
+
       </div>
     </div>
   </div><!-- /.container-fluid -->
@@ -13,15 +14,19 @@
   <div class="container-fluid">
     <div class="col-6">
       <h5 style="text-align: center;"> {{ len .streams}} Stream(s) </h5>
+      <button type="button" onclick="UpdateList()" class="btn btn-primary">Update(refresh) List</button>
     </div>
 
     <div class="stream_list">
       {{ range $key, $value := .streams }}
       <div class="row mt-3">
         <div class="col-9" id="{{ $key }}">
-          <div class="card-header">
-            <h2 class="card-title one-line-header" style="margin-right: 30px;">{{$key}}</h2>
-            <h2 class="card-title one-line-header" style="margin-right: 100px;">{{$value.CctvName}}</h2>
+          <div class="card-header" style="display: flex; align-items: center;">
+            <h2 class="card-title one-line-header" style="width: 90px; margin-right: 20px;">
+              {{$key}}</h2>
+            <h2 class="card-title one-line-header" style="width: 150px; margin-right: 20px;">
+              {{$value.CctvName}}
+            </h2>
             <button class="btn" onclick="openPreviewBox({{ $key }}, {{$value.CctvName}})"
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white;  margin-right: 10px;">
               <i class="fas fa-play"></i> Preview
@@ -42,40 +47,12 @@
 
     <div class="row mt-3">
       <div class="col-9">
-        <button type="button" onclick="UpdateList()" class="btn btn-primary">Update(refresh) List</button>
+        <!-- <button type="button" onclick="UpdateList()" class="btn btn-primary">Update(refresh) List</button> -->
       </div>
     </div>
   </div>
 </div>
 
-
-<script type="text/javascript" src="../../static/js/inner_webrtcPlayClient.js"></script>
-<!-- <script>
-  function LoadClientApp() {
-    // const clinent_app_addr = 'http://' + $('#media_svr_address').val() + '/static/js/inner_webRtcPlayClient.js';
-    const clinent_app_addr = 'http://127.0.0.1:8083/static/js/inner_webrtcPlayClient.js';
-    let logbox = document.getElementById('webrtcPlayLog');
-    if (logbox) {
-      let msg = "client_app_addr : " + clinent_app_addr;
-      let now = new Date();
-      let dateString = now.toLocaleString();
-      document.getElementById('webrtcPlayLog').innerHTML += `[${dateString}] ${msg}<br>`;
-      console.log("   '" + msg + "'");
-    }
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = clinent_app_addr;
-    script.onload = function () {
-      console.log('External script loaded successfully.');
-    };
-    script.onerror = function () {
-      console.error('Failed to load the external script.');
-    };
-    document.head.appendChild(script);
-  }
-
-  LoadClientApp();
-</script> -->
 
 <script>
 
@@ -90,109 +67,5 @@
   }
 
 </script>
-
-//////////
-<!-- Video Chat Modal (Bootstrap 모달) -->
-<!-- data-backdrop="static"와 data-keyboard="false"로 자동 닫힘을 방지 -->
-<div class="modal fade" id="previewBox" tabindex="-1" role="dialog" aria-labelledby="videoChatModalLabel"
-  aria-hidden="true" data-backdrop="static" data-keyboard="false">
-  <!-- -->
-  <div class="modal-dialog" role="document" style="max-width: 720px; margin: auto;">
-    <div class="modal-content">
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <input type="hidden" name="media_svr_address" id="media_svr_address" value="{{.media_svr_addr}}">
-        <input id="stream-name-previewbox" value="" readonly>
-        <button type="button" id="previewboxCloseButton" class="btn btn-secondary"
-          onclick="closePreviewBox(event)">Close</button>
-      </div>
-      <div class="modal-body">
-        <video class="img-fluid" id="videoElem" style="width: 99%;" autoplay muted no_controls>
-        </video>
-      </div>
-      <!-- <div class="modal-footer">
-        <button type="button" id="previewboxCloseButton" class="btn btn-secondary"
-          onclick="closePreviewBox(event)">Close</button>
-      </div> -->
-    </div>
-  </div>
-</div>
-
-<script src="../../static/js/jquery-3.4.1.min.js"></script>
-<script>
-  /////////////////////////////
-  // 플래그: 모달 닫기 작업 실행 중인지 확인
-  var closingInProgress = false;
-  var videoPrevewBox;
-  // 모달 열기
-  function openPreviewBox(in_uuid, in_name) {
-    closingInProgress = false;
-
-    videoPrevewBox = $("#previewBox");
-    videoPrevewBox.on('hidden.bs.modal', e => {
-      console.log("'hidden.bs.modal'");
-      closingInProgress = false;// 모달이 완전히 닫힌 후 플래그 리셋 처리
-    });
-    videoPrevewBox.modal('show');
-
-    // 모달 외의 영역(백드롭)을 클릭했을 때 처리
-    // backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
-    $("body").on("click", ".modal-backdrop", closePreviewBox);
-
-    document.getElementById('stream-name-previewbox').value = in_name;
-    //$('#stream-name-previewbox').value = in_name
-    openWebrtcPlayer($('#media_svr_address').val(), in_uuid, videoElem);
-  };
-
-  function closePreviewBox(e) {
-    console.log("closePreviewBox...");
-    if (e != '') {
-      e.preventDefault();
-    }
-    if (closingInProgress) {
-      console.log("closePreviewBox...failure 'already closing'");
-      return;
-    }
-    closingInProgress = true;
-    /*
-        prepareCloseModal()
-          .finally(() => { modalClose(); });
-    /*/
-    console.log("모달 닫기 전 사전 작업 실행...");
-    disconnect_webrtc_peer() //await mySleep(3000);
-    videoElem.pause();
-    videoElem.src = "";
-    videoElem.load();
-    console.log("사전 작업 완료.");
-    videoPrevewBox.modal('hide');
-    //*/
-  }
-
-  var modalClose = function () {
-    videoPrevewBox.modal('hide');
-  }
-
-  // 사전 작업 함수 (비동기 작업 시뮬레이션)
-  async function prepareCloseModal() {
-    console.log("모달 닫기 전 사전 작업 실행...");
-    disconnect_webrtc_peer() //await mySleep(3000);
-    videoElem.pause();
-    videoElem.src = "";
-    videoElem.load();
-    console.log("사전 작업 완료.");
-    return new Promise((resolve, reject) => {
-      resolve();
-    });
-  }
-  async function mySleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-  // $(document).ready(function () {
-  //   // 모달 외의 영역(백드롭)을 클릭했을 때 처리
-  //   // backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
-  //   $("body").on("click", ".modal-backdrop", closePreviewBox);
-
-  // });
-</script>
-
-<!-- /모달 -->
+{{template "preview_box.html" .}}
 {{template "foot.html" .}}

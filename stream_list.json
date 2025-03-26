@@ -10,7 +10,7 @@
       "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream",
       "url2": ""
     },
-    "cctv002": {
+    "cctv0023333": {
       "cctv_ip": "10.10.0.12",
       "cctv_name": "합천읍 중흥길 25",
       "debug": false,

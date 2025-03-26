@@ -25,7 +25,6 @@ func serveHTTP() {
 
 	router := gin.Default()
 	router.Use(CORSMiddleware())
-	router.StaticFS("/static", http.Dir("web/static"))
 
 	if _, err := os.Stat("./web"); !os.IsNotExist(err) {
 		router.LoadHTMLGlob("web/templates/*")
@@ -40,14 +39,16 @@ func serveHTTP() {
 		router.GET("/stream/player/:uuid", HTTPAPIServerStreamPlayer)
 		router.GET("/stream/updatelist", HTTPAPIServerStreamUpdateList)
 		router.POST("/stream/uploadlist", HTTPAPIServerStreamUploadList)
-	}
+		router.StaticFS("/static", http.Dir("web/static"))
 
+	}
 	//Webrtc Signalling
 	router.GET("/stream/codec/:uuid", HTTPAPIServerStreamCodec)
 	router.POST("/stream/receiver/:uuid", HTTPAPIServerStreamWebRTC)
 
 	//service starting
 	log.Println("ServerHTTP start")
+
 	//*
 	serverHttp = &http.Server{
 		Addr:    gConfig.HttpServer.HTTPPort,
@@ -107,11 +108,8 @@ func HTTPAPIStreamList(c *gin.Context) {
 func HTTPAPIStreamEdit(c *gin.Context) {
 	strSuuid := c.Param("uuid")
 	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("Stream Not Found")
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
+		log.Println("HTTPAPIStreamEdit error: unknown id")
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
 		return
 	}
 
@@ -157,11 +155,8 @@ func HTTPAPIStreamDelete(c *gin.Context) {
 	}
 	strSuuid := c.Param("uuid")
 	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("Stream Not Found")
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
+		log.Println("HTTPAPIStreamDelete error: unknown id")
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
 		return
 	}
 
@@ -182,11 +177,8 @@ func HTTPAPIStreamDelete(c *gin.Context) {
 func HTTPAPIServerStreamPlayer(c *gin.Context) {
 	strSuuid := c.Param("uuid")
 	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("Stream Not Found")
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
+		log.Println("HTTPAPIServerStreamPlayer error: unknown id")
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
 		return
 	}
 
@@ -318,11 +310,8 @@ func HTTPAPIServerStreamUploadList(c *gin.Context) {
 func HTTPAPIServerStreamCodec(c *gin.Context) {
 	strSuuid := c.Param("uuid")
 	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("Stream Not Found")
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
+		log.Println("HTTPAPIServerStreamCodec error: unknown id")
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
@@ -356,11 +345,8 @@ func HTTPAPIServerStreamCodec(c *gin.Context) {
 func HTTPAPIServerStreamWebRTC(c *gin.Context) {
 	strSuuid := c.PostForm("suuid")
 	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("Stream Not Found")
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
+		log.Println("HTTPAPIServerStreamWebRTC error: unknown id")
+		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
 		return
 	}
 	gStreamListInfo.RunStream(strSuuid) //gConfig.RunIFNotRun(strSuuid)
