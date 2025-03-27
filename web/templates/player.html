@@ -17,14 +17,14 @@
     <div class="row">
       <div class="col">
         <input type="hidden" name="media_svr_address" id="media_svr_address" value="{{.media_svr_addr}}">
-        <input name=" suuid" id="suuid" value="{{ .suuid }}">
+        <input name="suuid" id="suuid" value="{{ .suuid }}">
         <button id="btn_RunPlayer"
           onclick="openWebrtcPlayer($('#media_svr_address').val(), $('#suuid').val(), videoElem);"> start
           Player</button>
         <!-- <button id="btn_play" onclick="play_pause_video();"> play..</button> -->
         <!-- <input type="hidden" id="localSessionDescription" readonly="true"> -->
         <!-- <input type="hidden" id="remoteSessionDescription" readonly="true"> -->
-        <div id="remoteVideos">
+        <div>
           <video style="width:600px" id="videoElem" autoplay muted no_controls></video>
         </div>
         <div id="webrtcPlayLog"><br></div>

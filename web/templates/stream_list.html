@@ -31,6 +31,7 @@
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white;  margin-right: 10px;">
               <i class="fas fa-play"></i> Preview
             </button>
+
             <a class="btn" href="/stream/edit/{{$key}}"
               style="width: 100px; height: 35px ;background-color: #2c312c; color: white; margin-right: 10px;">
               <i class="fas fa-pen"></i> Edit
@@ -67,5 +68,6 @@
   }
 
 </script>
-{{template "preview_box.html" .}}
+{{template "edit_box.html" . }}
+{{template "preview_box.html" . }}
 {{template "foot.html" .}}

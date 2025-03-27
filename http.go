@@ -18,6 +18,18 @@ type JCodec struct {
 	Type string
 }
 
+const (
+	PAGE_STREAM_LIST = "stream list"
+	PAGE_STREAM_EDIT = "stream editing"
+	PAGE_STREAM_ADD  = "stream adding"
+)
+
+var pageNameMAP = map[string]string{
+	PAGE_STREAM_LIST: "stream_list.html",
+	PAGE_STREAM_EDIT: "edit_stream.html",
+	PAGE_STREAM_ADD:  "edit_stream.html",
+}
+
 var serverHttp *http.Server
 
 func serveHTTP() {
@@ -94,13 +106,13 @@ func HTTPAPIStreamList(c *gin.Context) {
 
 	media_svr_addr := gConfig.HttpServer.HTTPHost + gConfig.HttpServer.HTTPPort
 	log.Println("HTTPAPIStreamList() media_svr_addr: " + media_svr_addr)
-	pagename := "stream_list"
-	c.HTML(http.StatusOK, pagename+".html", gin.H{
+
+	c.HTML(http.StatusOK, pageNameMAP[PAGE_STREAM_LIST], gin.H{
 		"media_svr_addr": media_svr_addr,
 		"port":           gConfig.HttpServer.HTTPPort,
 		"streams":        gStreamListInfo.Streams,
 		"version":        time.Now().String(),
-		"page":           pagename,
+		"page":           PAGE_STREAM_LIST,
 	})
 }
 
@@ -113,32 +125,30 @@ func HTTPAPIStreamEdit(c *gin.Context) {
 		return
 	}
 
-	pagename := "edit_stream"
 	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
-	c.HTML(http.StatusOK, pagename+".html", gin.H{
+	c.HTML(http.StatusOK, pageNameMAP[PAGE_STREAM_EDIT], gin.H{
 		"port":       gConfig.HttpServer.HTTPPort,
 		"streamJson": string(streamsJSON),
 		"streams":    gStreamListInfo.Streams,
 		"streamone":  (gStreamListInfo.Streams)[strSuuid],
 		"uuid":       strSuuid,
 		"version":    time.Now().String(),
-		"page":       "Edit Stream",
+		"page":       PAGE_STREAM_EDIT,
 	})
 
 }
 
 // add
 func HTTPAPIStreamAdd(c *gin.Context) {
-	pagename := "edit_stream"
 	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
-	c.HTML(http.StatusOK, pagename+".html", gin.H{
+	c.HTML(http.StatusOK, pageNameMAP[PAGE_STREAM_ADD], gin.H{
 		"port":       gConfig.HttpServer.HTTPPort,
 		"streamJson": string(streamsJSON),
 		"streams":    gStreamListInfo.Streams,
 		"streamone":  StreamST{Uuid: "", CctvName: "", RtspUrl: ""},
 		"uuid":       "",
 		"version":    time.Now().String(),
-		"page":       "Add Stream",
+		"page":       PAGE_STREAM_ADD,
 	})
 }
 

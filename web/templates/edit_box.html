@@ -1,0 +1,122 @@
+<!-- /모달 -->
+<!-- data-backdrop="static"와 data-keyboard="false"로 자동 닫힘을 방지 -->
+<div class="modal fade" id="editbox" tabindex="-1" role="dialog" aria-labelledby="editStreamModalLabel"
+  aria-hidden="true" data-backdrop="static" data-keyboard="false">
+  <!-- -->
+  <div class="modal-dialog" role="document" style="max-width: 720px; margin: auto;">
+    <div class="modal-content">
+      <input type="hidden" id="uuid" value="" />
+      <div class="modal-header">
+        <h3 class="card-title">Stream parameters <small> ... main channel</small></h3>
+      </div>
+      <div class="modal-body">
+        <form class="stream-form main-form">
+          <div class="card-body">
+            <div class="form-group">
+              <label for="exampleInputEmail1">Stream ID</label>
+              <input type="text" class="form-control" name="stream-id" id="stream-id" placeholder="  Enter stream ID"
+                value="">
+            </div>
+            <div class="form-group">
+              <label for="exampleInputEmail1">Stream name</label>
+              <input type="text" class="form-control" name="stream-name" id="stream-name"
+                placeholder="  Enter stream name" value="">
+            </div>
+            <div class="form-group">
+              <label for="exampleInputEmail1">Stream url</label>
+              <input type="text" class="form-control" name="stream-url" id="stream-url" placeholder="  Enter stream url"
+                value="">
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" name="on_demand" id="on_demand-switch">
+                <label class="custom-control-label" for="on_demand-switch">OnDemand</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" name="debug" id="debug-switch">
+                <label class="custom-control-label" for="debug-switch">Enable debug</label>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="location.href='/stream/list'" class="btn btn-secondary">Cancel</button>
+        <button type="button" onclick="SaveStream()" class="btn btn-primary">Save stream</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  let g_isNewStream = false;
+
+  function openEditBox(in_uuid, in_streamone) {// 모달 열기
+    if (in_uuid == "") {
+      g_isNewStream = true;
+    }
+    const inputUuid = document.getElementById('stream-id');
+    inputUuid.val = in_uuid
+    if (g_isNewStream) {
+      inputUuid.setAttribute('readonly', true);
+    }
+    document.getElementById("uuid").val = in_uuid;
+
+    const chkDebug = document.getElementById('debug-switch');
+    if (in_streamone.Debug) {
+      chkDebug.setAttribute('checked', true);
+    }
+
+    const chkOndemand = document.getElementById('on_demand-switch');
+    if (in_streamone.OnDemand) {
+      chkOndemand.setAttribute('checked', true);
+    }
+
+    const inputStreamUrl = document.getElementById('stream-url');
+    inputStreamUrl.val = in_streamone.RtspUrl;
+
+    const inputStreamName = document.getElementById('stream-name');
+    inputStreamName.val = in_streamone.CctvName;
+
+  }
+</script>
+
+<script>
+
+  function SaveStream() {
+
+    const stream_id = $('#stream-id').val();
+    const stream_name = $('#stream-name').val();
+    const stream_url = $('#stream-url').val();
+
+    console.log('SaveStream()....');
+    // if (streamList.hasOwnProperty(stream_id)) {
+    if (g_isNewStream) {
+
+    }
+    else {
+    }
+
+    const params = {
+      suuid: stream_id,
+      name: stream_name,
+      url: stream_url,
+      debug: Boolean($('#debug-switch').prop('checked')),
+      on_demand: Boolean($('#on_demand-switch').prop('checked')),
+    }
+    if (params.debug == null) {
+      params.debug == false;
+    }
+    if (params.on_demand == null) {
+      params.on_demand == false;
+    }
+
+    //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
+    Request_HttpApi('POST', CMD_SAVE_STREAM, params);
+  }
+
+</script>
