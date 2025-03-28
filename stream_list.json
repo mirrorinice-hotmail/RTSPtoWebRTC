@@ -15,10 +15,10 @@
       "cctv_name": "합천읍 중흥길 25",
       "debug": false,
       "disable_audio": true,
-      "on_demand": true,
+      "on_demand": false,
       "status": 0,
       "url": "rtsp://210.99.70.120:1935/live/cctv001.stream",
-      "url2": "rtsp://"
+      "url2": ""
     }
   },
   "streams_extra": {

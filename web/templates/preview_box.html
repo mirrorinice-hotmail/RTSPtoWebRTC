@@ -1,8 +1,8 @@
 <!-- /모달 -->
 <!-- data-backdrop="static"와 data-keyboard="false"로 자동 닫힘을 방지 -->
 <div class="modal fade" id="previewbox" tabindex="-1" role="dialog" aria-labelledby="videoChatModalLabel"
-    aria-hidden="true" data-backdrop="static" data-keyboard="false">
-    <!-- -->
+    aria-hidden="true">
+    <!--data-backdrop="static" data-keyboard="false" -->
     <div class="modal-dialog" role="document" style="max-width: 720px; margin: auto;">
         <div class="modal-content">
             <!-- Modal Header -->
@@ -17,50 +17,47 @@
                     style="width: 99%;">
                 </video>
             </div>
-            <!-- <div class="modal-footer">
-                <button type="button" id="previewboxCloseButton" class="btn btn-secondary"
-                    onclick="closePreviewBox(event)">Close</button>
-            </div> -->
         </div>
     </div>
 </div>
 
 <script>
-    let previewbox_closingInProgress = false;// 플래그: 모달 닫기 작업 실행 중인지 확인
     let previewbox_modal = null;
     let previewbox_videoelem = null;
+    let previewbox_modal_on_set = false;
 
-    function _showPreviewboxModal() {
-        previewbox_closingInProgress = false;
+    function _setPreviewboxModal() {
+        if (previewbox_modal == null) {
+            previewbox_modal = $("#previewbox");
+            if (!previewbox_modal_on_set) {
+                previewbox_modal_on_set = true;
+                previewbox_modal.on('hidden.bs.modal', e => {
+                    console.log("previewbox closed ...'hidden.bs.modal'");
+                    _stopPreviewboxVideo();
+                });
+            }
+            previewbox_videoelem = document.getElementById('videoElem')
+        }
+        // 모달 외의 영역(백드롭)을 클릭했을 때 처리 - backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
+        // $("body").on("click", ".modal-backdrop", closePreviewBox);
 
-        previewbox_modal = $("#previewbox");
-        previewbox_modal.on('hidden.bs.modal', e => {
-            console.log("previewbox closed ...'hidden.bs.modal'");
-            previewbox_closingInProgress = false;// 모달이 완전히 닫힌 후 플래그 리셋 처리
-        });
         previewbox_modal.modal('show');
-
-        // 모달 외의 영역(백드롭)을 클릭했을 때 처리
-        // backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
-        $("body").on("click", ".modal-backdrop", closePreviewBox);
     }
 
     function openPreviewBox(in_uuid, in_name) {// 모달 열기
-        _showPreviewboxModal()
+        _setPreviewboxModal()
 
         document.getElementById('stream-name-previewbox').value = in_name;//$('#stream-name-previewbox').value = in_name
-        previewbox_videoelem = document.getElementById('videoElem')
         openWebrtcPlayer($('#media_svr_address').val(), in_uuid, previewbox_videoelem);
     };
 
     function _stopPreviewboxVideo() {
-        console.log("모달 닫기 전 사전 작업 실행...");
-        disconnect_webrtc_peer()
-
+        console.log("video closing begin...");
         previewbox_videoelem.pause();
         previewbox_videoelem.src = "";
         previewbox_videoelem.load();
-        console.log("사전 작업 완료.");
+        disconnect_webrtc_peer()
+        console.log("video closing end...");
     }
 
     function closePreviewBox(e) {
@@ -68,26 +65,8 @@
         if (e != '') {
             e.preventDefault();
         }
-        if (previewbox_closingInProgress) {
-            console.log("closePreviewBox...failure 'already closing'");
-            return;
-        }
-        previewbox_closingInProgress = true;
-        /*
-            const _prepareCloseModal = async function () {
-                _stopPreviewboxVideo();
-                return new Promise((resolve, reject) => {
-                    resolve();
-                });
-            }
-            const _modalClose = function () { previewbox_modal.modal('hide'); }
-            
-            _prepareCloseModal()
-              .finally(() => { _modalClose(); });
-        /*/
-        _stopPreviewboxVideo();
+
         previewbox_modal.modal('hide');
-        //*/
     }
 
 

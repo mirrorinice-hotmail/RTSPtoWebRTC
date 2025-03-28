@@ -14,11 +14,11 @@ let webrtc_stunaddr = "";
 let printToPage = msg => {
   let logbox = document.getElementById('webrtcPlayLog');
   if (logbox) {
-  let now = new Date();
-  let dateString = now.toLocaleString();
+    let now = new Date();
+    let dateString = now.toLocaleString();
     logbox.innerHTML += `[${dateString}] ${msg}<br>`;
-  console.log("   '" + msg + "'");
-}
+    console.log("   '" + msg + "'");
+  }
 }
 
 async function play_pause_video() {
@@ -93,7 +93,7 @@ function init_webrtc_peer() {
       printToPage(webrtc_pc.connectionState);
       if (webrtc_pc.connectionState === "disconnected" || webrtc_pc.connectionState === "failed") {
         printToPage("retry");
-        startWebrtcPlayer();
+        restartWebrtcPlayer();
       }
       //else if (webrtc_pc.connectionState === "connected") {
       //play_pause_video();
@@ -144,7 +144,7 @@ function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
 
   //??PYM_TEST_00000 
   var oneminute = 60 * 1000;
-  setInterval(startWebrtcPlayer, 10 * oneminute);
+  setInterval(restartWebrtcPlayer, 10 * oneminute);
   printToPage("____________________timer " + 10 + "minute(s)");
 
   webrtc_svraddr = in_webrtc_svraddr;
@@ -166,12 +166,12 @@ function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
   }
   if (!video_box.srcObject) video_box.srcObject = webrtc_stream;
 
-  startWebrtcPlayer();
+  restartWebrtcPlayer();
 
 }
 
-async function startWebrtcPlayer() {
-  printToPage("----- startWebrtcPlayer() ----- ");
+async function restartWebrtcPlayer() {
+  printToPage("----- restartWebrtcPlayer() ----- ");
   printToPage("://" + webrtc_svraddr + " / " + webrtc_source_id);
 
   init_webrtc_peer();
