@@ -1,6 +1,6 @@
 <!-- /모달 -->
 <!-- data-backdrop="static"와 data-keyboard="false"로 자동 닫힘을 방지 -->
-<div class="modal fade" id="previewBox" tabindex="-1" role="dialog" aria-labelledby="videoChatModalLabel"
+<div class="modal fade" id="previewbox" tabindex="-1" role="dialog" aria-labelledby="videoChatModalLabel"
     aria-hidden="true" data-backdrop="static" data-keyboard="false">
     <!-- -->
     <div class="modal-dialog" role="document" style="max-width: 720px; margin: auto;">
@@ -30,12 +30,12 @@
     let previewbox_modal = null;
     let previewbox_videoelem = null;
 
-    function openPreviewBox(in_uuid, in_name) {// 모달 열기
+    function _showPreviewboxModal() {
         previewbox_closingInProgress = false;
 
-        previewbox_modal = $("#previewBox");
+        previewbox_modal = $("#previewbox");
         previewbox_modal.on('hidden.bs.modal', e => {
-            console.log("previewBox closed ...'hidden.bs.modal'");
+            console.log("previewbox closed ...'hidden.bs.modal'");
             previewbox_closingInProgress = false;// 모달이 완전히 닫힌 후 플래그 리셋 처리
         });
         previewbox_modal.modal('show');
@@ -43,13 +43,25 @@
         // 모달 외의 영역(백드롭)을 클릭했을 때 처리
         // backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
         $("body").on("click", ".modal-backdrop", closePreviewBox);
+    }
 
+    function openPreviewBox(in_uuid, in_name) {// 모달 열기
+        _showPreviewboxModal()
 
-        //$('#stream-name-previewbox').value = in_name
-        document.getElementById('stream-name-previewbox').value = in_name;
+        document.getElementById('stream-name-previewbox').value = in_name;//$('#stream-name-previewbox').value = in_name
         previewbox_videoelem = document.getElementById('videoElem')
         openWebrtcPlayer($('#media_svr_address').val(), in_uuid, previewbox_videoelem);
     };
+
+    function _stopPreviewboxVideo() {
+        console.log("모달 닫기 전 사전 작업 실행...");
+        disconnect_webrtc_peer()
+
+        previewbox_videoelem.pause();
+        previewbox_videoelem.src = "";
+        previewbox_videoelem.load();
+        console.log("사전 작업 완료.");
+    }
 
     function closePreviewBox(e) {
         console.log("closePreviewBox...");
@@ -62,40 +74,26 @@
         }
         previewbox_closingInProgress = true;
         /*
-            prepareCloseModal()
-              .finally(() => { modalClose(); });
+            const _prepareCloseModal = async function () {
+                _stopPreviewboxVideo();
+                return new Promise((resolve, reject) => {
+                    resolve();
+                });
+            }
+            const _modalClose = function () { previewbox_modal.modal('hide'); }
+            
+            _prepareCloseModal()
+              .finally(() => { _modalClose(); });
         /*/
-        console.log("모달 닫기 전 사전 작업 실행...");
-        disconnect_webrtc_peer() //await mySleep(3000);
-
-
-        previewbox_videoelem.pause();
-        previewbox_videoelem.src = "";
-        previewbox_videoelem.load();
-        console.log("사전 작업 완료.");
+        _stopPreviewboxVideo();
         previewbox_modal.modal('hide');
         //*/
     }
 
-    const modalClose = function () {
-        previewbox_modal.modal('hide');
-    }
 
-    // 사전 작업 함수 (비동기 작업 시뮬레이션)
-    async function prepareCloseModal() {
-        console.log("모달 닫기 전 사전 작업 실행...");
-        disconnect_webrtc_peer() //await mySleep(3000);
-        previewbox_videoelem.pause();
-        previewbox_videoelem.src = "";
-        previewbox_videoelem.load();
-        console.log("사전 작업 완료.");
-        return new Promise((resolve, reject) => {
-            resolve();
-        });
-    }
-    async function mySleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    async function _mySleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 </script>
-<script type="text/javascript" src="../../static/js/inner_webrtcPlayClient.js"></script>
+<script type="text/javascript" src="../static/js/inner_webrtcPlayClient.js"></script>
 <!-- <script>
   function LoadClientApp() {
     // const clinent_app_addr = 'http://' + $('#media_svr_address').val() + '/static/js/inner_webRtcPlayClient.js';

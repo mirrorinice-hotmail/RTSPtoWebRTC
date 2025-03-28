@@ -5,7 +5,7 @@
       "cctv_name": "CCTV_13",
       "debug": false,
       "disable_audio": true,
-      "on_demand": true,
+      "on_demand": false,
       "status": 0,
       "url": "rtsp://10.10.0.31:1935/rinowebrtc/cctv5.stream",
       "url2": ""

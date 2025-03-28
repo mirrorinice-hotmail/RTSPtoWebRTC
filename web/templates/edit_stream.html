@@ -112,64 +112,68 @@
 {{template "foot.html" .}}
 
 <script>
-  org_stream_id = ({{ .uuid }});
+  const org_stream_id = ({{ .uuid }});
+
+  function _getStreamList() { return JSON.parse({{.streamJson }}); }
+
   function SaveStream() {
-    isNewStream = false;
+    let isNewStream = false;
     if (org_stream_id == "") {
       isNewStream = true;
     }
 
-    stream_id = $('#stream-id').val();
-    stream_name = $('#stream-name').val(),
-      stream_url = $('#stream-url').val(),
-      console.log('SaveStream()....streamJson:' + {{.streamJson }});
+    const stream_id = $('#stream-id').val();
+    const stream_name = $('#stream-name').val();
+    const stream_url = $('#stream-url').val();
+    //console.log('SaveStream()....streamJson:' + {{.streamJson }});
 
-  streamList = JSON.parse({{.streamJson }});
-  if (isNewStream) {
-    if (streamList.hasOwnProperty(stream_id)) {
-      console.log(`SaveStream()..:'` + stream_id + `' ??? already exist`);
-      msg = "stream id(" + stream_id + ") ,already exists"
-      Swal.fire({
-        icon: 'error', title: 'Same Stream ID', text: msg,
-        timer: 3000,
-        showConfirmButton: true
-      })
-      return
-    } else {
-      console.log(`SaveStream()..:'` + stream_id + `' !!! new stream`);
+    const streamList = _getStreamList();
+    if (isNewStream) {
+      if (streamList.hasOwnProperty(stream_id)) {
+        console.log(`SaveStream()..:'` + stream_id + `' ??? already exist`);
+        msg = "stream id(" + stream_id + ") ,already exists"
+        Swal.fire({
+          icon: 'error', title: 'Same Stream ID', text: msg,
+          timer: 3000,
+          showConfirmButton: true
+        })
+        return
+      } else {
+        console.log(`SaveStream()..:'` + stream_id + `' !!! new stream`);
+      }
+
+    }
+    else {
+      if (streamList.hasOwnProperty(stream_id)) {
+        console.log(`SaveStream()..:'` + stream_id + `' !!! exist`);
+      } else {
+        msg = "stream id(" + stream_id + ") ,not exists"
+        Swal.fire({
+          icon: 'error', title: 'Unknown Stream ID', text: msg,
+          timer: 3000,
+          showConfirmButton: true
+        })
+        return;
+      }
     }
 
-  }
-  else {
-    if (streamList.hasOwnProperty(stream_id)) {
-      console.log(`SaveStream()..:'` + stream_id + `' !!! exist`);
-    } else {
-      msg = "stream id(" + stream_id + ") ,not exists"
-      Swal.fire({
-        icon: 'error', title: 'Unknown Stream ID', text: msg,
-        timer: 3000,
-        showConfirmButton: true
-      })
-      return;
+    var params = {
+      new_stream: Boolean(isNewStream),
+      suuid: stream_id,
+      name: stream_name,
+      url: stream_url,
+      debug: Boolean($('#debug-switch').prop('checked')),
+      on_demand: Boolean($('#on_demand-switch').prop('checked')),
     }
-  }
+    if (params.debug == null) {
+      params.debug == false;
+    }
+    if (params.on_demand == null) {
+      params.on_demand == false;
+    }
 
-  var params = {
-    suuid: stream_id,
-    name: stream_name,
-    url: stream_url,
-    debug: Boolean($('#debug-switch').prop('checked')),
-    on_demand: Boolean($('#on_demand-switch').prop('checked')),
-  }
-  if (params.debug == null) {
-    params.debug == false;
-  }
-  if (params.on_demand == null) {
-    params.on_demand == false;
-  }
-
-  //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
-  Request_HttpApi('POST', CMD_SAVE_STREAM, params);
+    //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
+    Request_HttpApi('POST', CMD_SAVE_STREAM, params);
   }
 
 </script>

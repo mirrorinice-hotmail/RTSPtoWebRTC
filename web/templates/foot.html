@@ -3,17 +3,7 @@
 <!-- Control Sidebar -->
 <aside class="control-sidebar control-sidebar-dark">
   <!-- Control sidebar content goes here -->
-  <div class="p-3">
-    <h5>Default player</h5>
 
-    <div class="form-check">
-      <label class="form-check-label">
-        <input class="form-check-input" type="radio" name="defaultPlayer" value="webrtc">
-        WebRTC
-      </label>
-    </div>
-
-  </div>
 </aside>
 <!-- /.control-sidebar -->
 
@@ -21,13 +11,13 @@
 
 </div>
 <script>
+  //const CMD_ADD_STREAM = 'add stream';
   const CMD_SAVE_STREAM = 'save stream';
   const CMD_UPDATE_LIST = 'update list';
   const CMD_DELETE_STREAM = 'delete stream';
 
   function Request_HttpApi(in_httpType, in_cmd, in_data) {
-    api_url = "";
-    suuid = in_data;
+    let api_url = "";
 
     switch (in_cmd) {
       case CMD_SAVE_STREAM:
@@ -37,6 +27,7 @@
         api_url = '/stream/updatelist';
         break;
       case CMD_DELETE_STREAM:
+        const suuid = in_data;
         api_url = '/stream/delete/' + suuid + '';
         break;
       default:
@@ -83,6 +74,7 @@
 
     if (in_data != null) {
       ajaxParam.data = JSON.stringify(in_data);
+      //console.log("Request_HttpApi()..'", in_cmd, "'(", ajaxParam.data, ")")
     }
     $.ajax(ajaxParam);
   }
@@ -90,11 +82,6 @@
 </script>
 
 <!-- ./wrapper -->
-<script src="/../static/plugins/jquery/jquery.min.js"></script>
-<script src="/../static/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/../static/js/adminlte.min.js"></script>
-<script src="/../static/plugins/sweetalert2/sweetalert2.min.js"></script>
-<script src="/../static/js/index.js"></script>
 
 
 </body>

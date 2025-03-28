@@ -7,13 +7,15 @@
   <meta http-equiv="x-ua-compatible" content="ie=edge">
 
   <title>Rinortsp2Web</title>
-  <link rel="stylesheet" href="/../static/plugins/fontawesome-free/css/all.min.css">
-  <link rel="stylesheet" href="/../static/css/adminlte.min.css">
-  <link rel="stylesheet" href="/../static/plugins/sweetalert2/sweetalert2.min.css">
-  <link rel="stylesheet" href="/../static/css/index.css">
-  <link rel="stylesheet" href="/../static/css/google-fonts.css">
-  <script type="text/javascript" src="../../static/js/jquery-3.4.1.min.js"></script>
-  <script type="text/javascript" src="../../static/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="../static/plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="../static/plugins/sweetalert2/sweetalert2.min.css">
+  <link rel="stylesheet" href="../static/css/adminlte.min.css">
+  <link rel="stylesheet" href="../static/css/google-fonts.css">
+  <link rel="stylesheet" href="../static/css/index.css">
+  <script src="../static/plugins/jquery/jquery.min.js"></script>
+  <script src="../static/plugins/bootstrap/js/bootstrap.min.js"></script>
+  <script src="../static/plugins/sweetalert2/sweetalert2.min.js"></script>
+  <script src="../static/js/adminlte.min.js"></script>
 </head>
 
 <body class="hold-transition sidebar-mini">
@@ -26,15 +28,14 @@
           <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
             <li class="nav-item ">
-              <a href="/stream/list" class="nav-link {{ if  (eq .page " stream_list") }} active {{end}}">
-                <i class="fas fa-list"></i>
-                <p>Streams list</p>
+              <!-- <a class="nav-link {{ if  (eq .page " stream_list") }} active {{end}}" href="/stream/list" > -->
+              <a class="nav-link" href="/stream/list"> <i class="fas fa-list"></i>
+                Streams list
               </a>
             </li>
             <li class="nav-item">
-              <a href="/stream/add" class="nav-link {{ if  (eq .page " add_stream") }} active {{end}}">
-                <i class="fas fa-plus"></i>
-                <p>Add stream</p>
+              <a class="btn" onclick="openEditBox(null, null)"><i class="fas fa-plus"></i>
+                Add stream
               </a>
             </li>
           </ul>

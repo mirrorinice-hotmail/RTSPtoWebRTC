@@ -1,11 +1,10 @@
-<!-- /��� -->
-<!-- data-backdrop="static"�� data-keyboard="false"�� �ڵ� ������ ���� -->
+<!-- /모달 -->
+<!-- data-backdrop="static"와 data-keyboard="false"로 자동 닫힘을 방지 -->
 <div class="modal fade" id="editbox" tabindex="-1" role="dialog" aria-labelledby="editStreamModalLabel"
   aria-hidden="true" data-backdrop="static" data-keyboard="false">
   <!-- -->
   <div class="modal-dialog" role="document" style="max-width: 720px; margin: auto;">
     <div class="modal-content">
-      <input type="hidden" id="uuid" value="" />
       <div class="modal-header">
         <h3 class="card-title">Stream parameters <small> ... main channel</small></h3>
       </div>
@@ -43,8 +42,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" onclick="location.href='/stream/list'" class="btn btn-secondary">Cancel</button>
-        <button type="button" onclick="SaveStream()" class="btn btn-primary">Save stream</button>
+        <button type="button" onclick="closeEditBox(event)" class="btn btn-secondary">Cancel</button>
+        <button type="button" onclick="editbox_SaveStream()" class="btn btn-primary">Save stream</button>
       </div>
     </div>
   </div>
@@ -53,55 +52,100 @@
 
 
 <script>
-  let g_isNewStream = false;
+  let editbox_closingInProgress = false;// 플래그: 모달 닫기 작업 실행 중인지 확인
+  let editbox_modal = null;
+  let editbox_isNewStream = false;
 
-  function openEditBox(in_uuid, in_streamone) {// ��� ����
-    if (in_uuid == "") {
-      g_isNewStream = true;
+  function showEditboxModal() {
+    editbox_closingInProgress = false;
+
+    editbox_modal = $("#editbox");
+    editbox_modal.on('hidden.bs.modal', e => {
+      console.log("editbox closed ...'hidden.bs.modal'");
+      editbox_closingInProgress = false;// 모달이 완전히 닫힌 후 플래그 리셋 처리
+    });
+    editbox_modal.modal('show');
+
+    // 모달 외의 영역(백드롭)을 클릭했을 때 처리
+    // backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
+    $("body").on("click", ".modal-backdrop", closeEditBox);
+  }
+
+  function openEditBox(in_uuid, in_streamone) {// 모달 열기
+    console.log("OpenEditBox", in_uuid, in_streamone);
+
+    editbox_isNewStream = false;
+    if (in_uuid == null || in_uuid == "") {
+      editbox_isNewStream = true;
+      console.log("OpenEditBox newstream");
     }
+
     const inputUuid = document.getElementById('stream-id');
-    inputUuid.val = in_uuid
-    if (g_isNewStream) {
-      inputUuid.setAttribute('readonly', true);
-    }
-    document.getElementById("uuid").val = in_uuid;
-
+    const inputStreamName = document.getElementById('stream-name');
+    const inputStreamUrl = document.getElementById('stream-url');
     const chkDebug = document.getElementById('debug-switch');
-    if (in_streamone.Debug) {
-      chkDebug.setAttribute('checked', true);
-    }
-
     const chkOndemand = document.getElementById('on_demand-switch');
-    if (in_streamone.OnDemand) {
+
+    inputUuid.value = ""
+    inputUuid.removeAttribute('readonly');
+    inputStreamName.value = "";
+    inputStreamUrl.value = "";
+    chkDebug.removeAttribute('checked');
+    chkOndemand.removeAttribute('checked');
+
+    if (editbox_isNewStream) {
       chkOndemand.setAttribute('checked', true);
     }
+    else {
+      inputUuid.value = in_uuid;
+      inputUuid.setAttribute('readonly', true);
+      inputStreamName.value = in_streamone.cctv_name;
+      inputStreamUrl.value = in_streamone.url;
+      if (in_streamone.debug) { chkDebug.setAttribute('checked', true); }
+      if (in_streamone.on_demand) { chkOndemand.setAttribute('checked', true); }
+    }
 
-    const inputStreamUrl = document.getElementById('stream-url');
-    inputStreamUrl.val = in_streamone.RtspUrl;
-
-    const inputStreamName = document.getElementById('stream-name');
-    inputStreamName.val = in_streamone.CctvName;
-
+    showEditboxModal();
   }
+
+  function closeEditBox(e) {
+    console.log("closeEditBox...");
+    if (e != null) {
+      e.preventDefault();
+    }
+    if (editbox_closingInProgress) {
+      console.log("closeEditBox...failure 'already closing'");
+      return;
+    }
+    editbox_closingInProgress = true;
+
+    console.log("모달 닫기 전 사전 작업 실행...");
+
+    console.log("사전 작업 완료.");
+    editbox_modal.modal('hide');
+    //*/
+  }
+
 </script>
 
 <script>
 
-  function SaveStream() {
+  function editbox_SaveStream() {
 
     const stream_id = $('#stream-id').val();
     const stream_name = $('#stream-name').val();
     const stream_url = $('#stream-url').val();
 
-    console.log('SaveStream()....');
+    console.log('editbox_SaveStream()....');
     // if (streamList.hasOwnProperty(stream_id)) {
-    if (g_isNewStream) {
+    if (editbox_isNewStream) {
 
     }
     else {
     }
 
     const params = {
+      new_stream: Boolean(editbox_isNewStream),
       suuid: stream_id,
       name: stream_name,
       url: stream_url,
@@ -115,7 +159,7 @@
       params.on_demand == false;
     }
 
-    //console.log('SaveStream()...suuid:' + params.suuid + ', url:' + params.url  + ', demand:' + params.on_demand + ', debug:' + params.debug)
+    //console.log('editbox_SaveStream()...suuid:' + params.suuid + ', url:' + params.url + ', demand:' + params.on_demand + ', debug:' + params.debug)
     Request_HttpApi('POST', CMD_SAVE_STREAM, params);
   }
 

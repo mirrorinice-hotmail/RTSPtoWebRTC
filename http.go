@@ -243,6 +243,7 @@ func HTTPAPIServerStreamUpdateList(c *gin.Context) {
 }
 
 type streamSaveParamST struct {
+	NewStream bool   `json:"new_stream"`
 	Suuid     string `json:"suuid" binding:"required"`
 	Name      string `json:"name" binding:"required"`
 	RtspUrl   string `json:"url" binding:"required"`

@@ -192,25 +192,12 @@ func (obj *StreamListInfoST) ApplyStream(saveParam *streamSaveParamST) bool {
 	// {Uuid : saveParam.Suuid, CctvName : saveParam.Name, RtspUrl : saveParam.RtspUrl,
 	// OnDemand : saveParam.OnDemand, Debug: saveParam.Debug }
 	Suuid := saveParam.Suuid
-	if obj.exist(Suuid) { //edit/change parameter
-		if !obj.StopStream(Suuid) {
+
+	if saveParam.NewStream { //add parameter
+		if obj.exist(Suuid) {
+			log.Println("ApplyStream().. error : already exits")
 			return false
 		}
-		obj.mutex.Lock()
-		tmpStream := obj.Streams[Suuid]
-		tmpStream.CctvName = saveParam.Name
-		tmpStream.RtspUrl = saveParam.RtspUrl
-		tmpStream.RtspUrl_2 = saveParam.RtspUrl_2
-		tmpStream.OnDemand = saveParam.OnDemand
-		tmpStream.Debug = saveParam.Debug
-		obj.Streams[Suuid] = tmpStream
-		obj.mutex.Unlock()
-
-		obj.RunStream(Suuid)
-		return true
-
-	} else { //add parameter
-		obj.mutex.Lock()
 		tmpStream := StreamST{
 			Uuid:     Suuid,
 			CctvName: saveParam.Name,
@@ -227,12 +214,30 @@ func (obj *StreamListInfoST) ApplyStream(saveParam *streamSaveParamST) bool {
 			RunLock:      false,
 		}
 		tmpStream.Channels["0"] = ChannelST{}
+		obj.mutex.Lock()
+		obj.Streams[Suuid] = tmpStream
+		obj.mutex.Unlock()
+	} else { //edit/change parameter
+		if !obj.exist(Suuid) {
+			log.Println("ApplyStream().. error : unknown stream id")
+			return false
+		}
+		if !obj.StopStream(Suuid) {
+			return false
+		}
+		obj.mutex.Lock()
+		tmpStream := obj.Streams[Suuid]
+		tmpStream.CctvName = saveParam.Name
+		tmpStream.RtspUrl = saveParam.RtspUrl
+		tmpStream.RtspUrl_2 = saveParam.RtspUrl_2
+		tmpStream.OnDemand = saveParam.OnDemand
+		tmpStream.Debug = saveParam.Debug
 		obj.Streams[Suuid] = tmpStream
 		obj.mutex.Unlock()
 
-		obj.RunStream(Suuid)
-		return true
 	}
+	obj.RunStream(Suuid)
+	return true
 
 }
 
