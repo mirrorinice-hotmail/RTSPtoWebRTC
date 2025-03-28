@@ -11,10 +11,12 @@
 
 </div>
 <script>
-  //const CMD_ADD_STREAM = 'add stream';
   const CMD_SAVE_STREAM = 'save stream';
   const CMD_UPDATE_LIST = 'update list';
   const CMD_DELETE_STREAM = 'delete stream';
+
+  const RESP_StatusNotFound = 404;
+  const RESP_StatusConflict = 409;
 
   function Request_HttpApi(in_httpType, in_cmd, in_data) {
     let api_url = "";
@@ -50,7 +52,6 @@
       },
       success: function (response) {  //response handle
         if (response.status == "success") {
-
           msg = "'" + in_cmd + "' success "
           Swal.fire({
             icon: 'success', title: 'Response...', text: msg,
@@ -59,16 +60,36 @@
           }).then(() => {
             window.location.href = '/stream/list';
           });
-
-        } else {
-          msg = "'" + in_cmd + "' failure "
+        }
+        else {
+          msg = "'" + in_cmd + "' : " + response.status;
           Swal.fire({
-            icon: 'error', title: 'Response...', text: msg,
+            icon: 'success', title: 'Response...', text: msg,
           })
         }
       },
       error: function (e) {
         console.log(e);
+        msg = "'" + in_cmd + "' : " + e.statusText;
+        switch (in_cmd) {
+          case CMD_SAVE_STREAM:
+            if (e.status == RESP_StatusConflict) {
+              msg = "the Stream_ID aleredy exists.";
+            }
+            else if (e.status == RESP_StatusNotFound) {
+              msg = "the Stream does not exist."
+            }
+            break;
+          //case CMD_UPDATE_LIST:
+          //  break;
+          //case CMD_DELETE_STREAM:
+          //  break;
+          default:
+            break;
+        }
+        Swal.fire({
+          icon: 'error', title: 'Response...', text: msg,
+        })
       }
     };
 

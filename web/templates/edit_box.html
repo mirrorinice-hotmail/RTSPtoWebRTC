@@ -56,7 +56,7 @@
   let editbox_modal = null;
   let editbox_isNewStream = false;
 
-  function showEditboxModal() {
+  function _showEditboxModal() {
     editbox_closingInProgress = false;
 
     editbox_modal = $("#editbox");
@@ -105,7 +105,7 @@
       if (in_streamone.on_demand) { chkOndemand.setAttribute('checked', true); }
     }
 
-    showEditboxModal();
+    _showEditboxModal();
   }
 
   function closeEditBox(e) {
@@ -123,7 +123,6 @@
 
     console.log("사전 작업 완료.");
     editbox_modal.modal('hide');
-    //*/
   }
 
 </script>

@@ -278,6 +278,20 @@ func HTTPAPIStreamSave(c *gin.Context) {
 		saveParam.Debug,
 		saveParam.OnDemand)
 
+	if saveParam.NewStream { //add parameter
+		if gStreamListInfo.exist(saveParam.Suuid) {
+			log.Println("ApplyStream().. error : already exits")
+			c.JSON(http.StatusConflict, gin.H{"status": "failure"})
+			return
+		}
+	} else { //edit/change parameter
+		if !gStreamListInfo.exist(saveParam.Suuid) {
+			log.Println("ApplyStream().. error : unknown stream id")
+			c.JSON(http.StatusNotFound, gin.H{"status": "failure"})
+			return
+		}
+	}
+
 	if gStreamListInfo.ApplyStream(&saveParam) {
 		gStreamListInfo.SaveList()
 		log.Println("HTTPAPIStreamSave: success")

@@ -5,17 +5,20 @@ let webrtc_source_id = null;
 let webrtc_api_get_codec = "/stream/codec/"
 let webrtc_api_set_remotesdp = "/stream/receiver/"
 let webrtc_urlscheme = "http://"
-let webrtc_stunaddr = "stun:stun.l.google.com:19302";
+let webrtc_stunaddr = "";
 //"stun:" + "127.0.0.1:2222"
-//"stun:stun.l.google.com:19302"
+//"stun.l.google.com:19302"
 
 
 
 let printToPage = msg => {
+  let logbox = document.getElementById('webrtcPlayLog');
+  if (logbox) {
   let now = new Date();
   let dateString = now.toLocaleString();
-  document.getElementById('webrtcPlayLog').innerHTML += `[${dateString}] ${msg}<br>`;
+    logbox.innerHTML += `[${dateString}] ${msg}<br>`;
   console.log("   '" + msg + "'");
+}
 }
 
 async function play_pause_video() {
@@ -28,7 +31,7 @@ async function play_pause_video() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 let webrtc_config = {
-  iceServers: [{
+  n_iceServers: [{
     urls: [webrtc_stunaddr]
   }]
 };
@@ -131,12 +134,11 @@ function connect_webrtc_peer() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-$(document).ready(function () {
-  console.log('---start----');
-  printToPage("ready addclass 0303");
-  //$('#suuid').addClass('active');
-  openWebrtcPlayer($('#media_svr_address').val(), $('#suuid').val(), videoElem);
-});
+//$(document).ready(function () {
+//   console.log('---inner_webrtcPlayClient.js start----');
+//   printToPage("ready addclass 0303");
+//   openWebrtcPlayer($('#media_svr_address').val(), $('#suuid').val(), videoElem);
+//});
 
 function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
 
