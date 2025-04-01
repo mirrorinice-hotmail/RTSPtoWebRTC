@@ -24,41 +24,37 @@
 <script>
     let previewbox_modal = null;
     let previewbox_videoelem = null;
-    let previewbox_modal_on_set = false;
+    let previewbox_uuid = null;
 
-    function _setPreviewboxModal() {
+
+    function _setPreviewboxModal(in_uuid, in_name) {
+        previewbox_uuid = in_uuid;
+        document.getElementById('stream-name-previewbox').value = in_name;//$('#stream-name-previewbox').value = in_name
+        previewbox_videoelem = document.getElementById('videoElem')
+
         if (previewbox_modal == null) {
             previewbox_modal = $("#previewbox");
-            if (!previewbox_modal_on_set) {
-                previewbox_modal_on_set = true;
-                previewbox_modal.on('hidden.bs.modal', e => {
-                    console.log("previewbox closed ...'hidden.bs.modal'");
-                    _stopPreviewboxVideo();
-                });
-            }
-            previewbox_videoelem = document.getElementById('videoElem')
+
+            previewbox_modal.on('shown.bs.modal', e => {
+                console.log("previewbox open(ed) ...'shown.bs.modal'");
+                openWebrtcPlayer($('#media_svr_address').val(), previewbox_uuid, previewbox_videoelem);
+            });
+
+            previewbox_modal.on('hidden.bs.modal', e => {
+                console.log("previewbox closed ...'hidden.bs.modal'");
+                closeWebrtcPlayer()
+                console.log("video closing end...");
+            });
         }
         // 모달 외의 영역(백드롭)을 클릭했을 때 처리 - backdrop: 'static' 모드에서는 기본 자동 닫힘이 발생하지 않으므로, 수동으로 이벤트 처리
         // $("body").on("click", ".modal-backdrop", closePreviewBox);
 
-        previewbox_modal.modal('show');
     }
 
     function openPreviewBox(in_uuid, in_name) {// 모달 열기
-        _setPreviewboxModal()
-
-        document.getElementById('stream-name-previewbox').value = in_name;//$('#stream-name-previewbox').value = in_name
-        openWebrtcPlayer($('#media_svr_address').val(), in_uuid, previewbox_videoelem);
+        _setPreviewboxModal(in_uuid, in_name);
+        previewbox_modal.modal('show');
     };
-
-    function _stopPreviewboxVideo() {
-        console.log("video closing begin...");
-        previewbox_videoelem.pause();
-        previewbox_videoelem.src = "";
-        previewbox_videoelem.load();
-        disconnect_webrtc_peer()
-        console.log("video closing end...");
-    }
 
     function closePreviewBox(e) {
         console.log("closePreviewBox...");

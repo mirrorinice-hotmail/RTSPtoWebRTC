@@ -8,6 +8,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/lib/pq v1.10.9
 	github.com/liip/sheriff v0.12.0
+	golang.org/x/sys v0.6.0
 )
 
 require (
@@ -48,7 +49,6 @@ require (
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/protobuf v1.29.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

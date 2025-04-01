@@ -17,8 +17,8 @@ let printToPage = msg => {
     let now = new Date();
     let dateString = now.toLocaleString();
     logbox.innerHTML += `[${dateString}] ${msg}<br>`;
-    console.log("   '" + msg + "'");
   }
+  console.log("   '" + msg + "'");
 }
 
 async function play_pause_video() {
@@ -31,12 +31,13 @@ async function play_pause_video() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 let webrtc_config = {
-  n_iceServers: [{
-    urls: [webrtc_stunaddr]
-  }]
+  // iceServers: [{
+  //   urls: [webrtc_stunaddr]
+  // }]
 };
 let webrtc_stream = new MediaStream();
 let webrtc_pc = null;
+let webrtc_timer10minId = null;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 function disconnect_webrtc_peer() {
@@ -83,7 +84,8 @@ function init_webrtc_peer() {
       printToPage("ice_: " + webrtc_pc.iceGatheringState);
     };
     webrtc_pc.ondatachannel = (event) => {
-      console.log("-->", event);
+      //console.log("-->", event);
+      printToPage("ondatachannel: " + event);
     };
     webrtc_pc.onpeeridentity = (event) => {
       printToPage("Peer identity: " + event.assertion);
@@ -139,14 +141,19 @@ function connect_webrtc_peer() {
 //   printToPage("ready addclass 0303");
 //   openWebrtcPlayer($('#media_svr_address').val(), $('#suuid').val(), videoElem);
 //});
+function closeWebrtcPlayer() {
+  if (webrtc_timer10minId) {
+    clearInterval(webrtc_timer10minId);
+    webrtc_timer10minId = null;
+  }
+  disconnect_webrtc_peer();
+
+  video_box.pause();
+  video_box.src = "";
+  video_box.load();
+}
 
 function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
-
-  //??PYM_TEST_00000 
-  var oneminute = 60 * 1000;
-  setInterval(restartWebrtcPlayer, 10 * oneminute);
-  printToPage("____________________timer " + 10 + "minute(s)");
-
   webrtc_svraddr = in_webrtc_svraddr;
   if (!webrtc_svraddr) {
     printToPage("no media server address");
@@ -164,10 +171,18 @@ function openWebrtcPlayer(in_webrtc_svraddr, in_suuid, in_videoElem) {
     printToPage("no videoElem");
     return;
   }
-  if (!video_box.srcObject) video_box.srcObject = webrtc_stream;
+  if (!video_box.srcObject) {
+    video_box.srcObject = webrtc_stream;
+  }
+
+  if (webrtc_timer10minId == null) {
+    const oneminute = 60 * 1000;
+    //??PYM_TEST_00000 
+    webrtc_timer10minId = setInterval(restartWebrtcPlayer, 1 * oneminute);
+    printToPage("____________________timer " + 10 + "minute(s)");
+  }
 
   restartWebrtcPlayer();
-
 }
 
 async function restartWebrtcPlayer() {

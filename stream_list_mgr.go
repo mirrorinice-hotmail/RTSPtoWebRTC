@@ -317,11 +317,7 @@ func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
 			//TODO Delete test
 			for _, codec := range tmpStream.Codecs {
 				if codec.Type() == av.H264 {
-					codecVideo := codec.(h264parser.CodecData)
-					if codecVideo.SPS() != nil && codecVideo.PPS() != nil && len(codecVideo.SPS()) > 0 && len(codecVideo.PPS()) > 0 {
-						//ok
-						//log.Println("Ok Video Ready to play")
-					} else {
+					if !_IsVideoCodecReady(codec.(h264parser.CodecData)) {
 						//video codec not ok
 						log.Println("Bad Video Codec SPS or PPS Wait")
 						time.Sleep(50 * time.Millisecond)
@@ -330,6 +326,32 @@ func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
 				}
 			}
 			return tmpStream.Codecs
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return nil
+}
+
+func _IsVideoCodecReady(in_cv h264parser.CodecData) bool {
+	return in_cv.SPS() != nil && in_cv.PPS() != nil && len(in_cv.SPS()) > 0 && len(in_cv.PPS()) > 0
+}
+
+func (obj *StreamListInfoST) getCodec2(suuid string) []av.CodecData {
+	for i := 0; i < 100; i++ {
+		obj.mutex.RLock()
+		tmpStream, ok := (obj.Streams)[suuid]
+		obj.mutex.RUnlock()
+		if !ok {
+			return nil
+		}
+		if tmpStream.Codecs != nil {
+			for _, codec := range tmpStream.Codecs {
+				if codec.Type() == av.H264 && _IsVideoCodecReady(codec.(h264parser.CodecData)) {
+					return tmpStream.Codecs
+				}
+
+				log.Println("Bad Video Codec SPS or PPS Wait") //video codec not ready
+			}
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
