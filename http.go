@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -17,14 +16,14 @@ type JCodec struct {
 
 const (
 	PAGE_STREAM_LIST = "stream list"
-	PAGE_STREAM_EDIT = "stream editing"
-	PAGE_STREAM_ADD  = "stream adding"
+	//PAGE_STREAM_EDIT = "stream editing"
+	//PAGE_STREAM_ADD  = "stream adding"
 )
 
 var pageNameMAP = map[string]string{
 	PAGE_STREAM_LIST: "stream_list.html",
-	PAGE_STREAM_EDIT: "edit_stream.html",
-	PAGE_STREAM_ADD:  "edit_stream.html",
+	//PAGE_STREAM_EDIT: "edit_stream.html",
+	//PAGE_STREAM_ADD:  "edit_stream.html",
 }
 
 var serverHttp *http.Server
@@ -39,9 +38,6 @@ func serveHTTP() {
 		router.LoadHTMLGlob("web/templates/*")
 		router.GET("/", HTTPAPIStreamList)
 		router.GET("/stream/list", HTTPAPIStreamList)
-		router.GET("/stream/edit", HTTPAPIStreamEdit)
-		router.GET("/stream/edit/:uuid", HTTPAPIStreamEdit)
-		router.GET("/stream/add", HTTPAPIStreamAdd)
 		router.POST("/stream/save", HTTPAPIStreamSave)
 		router.GET("/stream/delete/:uuid", HTTPAPIStreamDelete)
 		router.GET("/stream/player", HTTPAPIServerStreamPlayer)
@@ -78,21 +74,6 @@ func serveHTTP() {
 	log.Println("ServerHTTP stopped")
 }
 
-// index
-/*func HTTPAPIServerIndex(c *gin.Context) {
-	firstUuid, ok := gStreamListInfo.GetFirstStreamUuid()
-	if ok {
-		c.Header("Cache-Control", "no-cache, max-age=0, must-revalidate, no-store")
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Redirect(http.StatusMovedPermanently, "stream/player/"+firstUuid)
-	} else {
-		c.HTML(http.StatusOK, "index.html", gin.H{
-			"port":    gConfig.HttpServer.HTTPPort,
-			"version": time.Now().String(),
-		})
-	}
-}*/
-
 // list
 func HTTPAPIStreamList(c *gin.Context) {
 	_, ok := gStreamListInfo.GetFirstStreamUuid()
@@ -110,42 +91,6 @@ func HTTPAPIStreamList(c *gin.Context) {
 		"streams":        gStreamListInfo.Streams,
 		"version":        time.Now().String(),
 		"page":           PAGE_STREAM_LIST,
-	})
-}
-
-// edit
-func HTTPAPIStreamEdit(c *gin.Context) {
-	strSuuid := c.Param("uuid")
-	if !gStreamListInfo.exist(strSuuid) {
-		log.Println("HTTPAPIStreamEdit error: unknown id")
-		c.JSON(http.StatusNotFound, gin.H{"error": "unknown id"})
-		return
-	}
-
-	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
-	c.HTML(http.StatusOK, pageNameMAP[PAGE_STREAM_EDIT], gin.H{
-		"port":       gConfig.HttpServer.HTTPPort,
-		"streamJson": string(streamsJSON),
-		"streams":    gStreamListInfo.Streams,
-		"streamone":  (gStreamListInfo.Streams)[strSuuid],
-		"uuid":       strSuuid,
-		"version":    time.Now().String(),
-		"page":       PAGE_STREAM_EDIT,
-	})
-
-}
-
-// add
-func HTTPAPIStreamAdd(c *gin.Context) {
-	streamsJSON, _ := json.Marshal(gStreamListInfo.Streams)
-	c.HTML(http.StatusOK, pageNameMAP[PAGE_STREAM_ADD], gin.H{
-		"port":       gConfig.HttpServer.HTTPPort,
-		"streamJson": string(streamsJSON),
-		"streams":    gStreamListInfo.Streams,
-		"streamone":  StreamST{Uuid: "", CctvName: "", RtspUrl: ""},
-		"uuid":       "",
-		"version":    time.Now().String(),
-		"page":       PAGE_STREAM_ADD,
 	})
 }
 

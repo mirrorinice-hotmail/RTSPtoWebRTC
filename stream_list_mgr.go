@@ -305,7 +305,7 @@ func (obj *StreamListInfoST) setCodec(suuid string, codecs []av.CodecData) {
 	}
 }
 
-func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
+/*func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
 	for i := 0; i < 100; i++ {
 		obj.mutex.RLock()
 		tmpStream, ok := (obj.Streams)[suuid]
@@ -330,7 +330,7 @@ func (obj *StreamListInfoST) getCodec(suuid string) []av.CodecData {
 		time.Sleep(50 * time.Millisecond)
 	}
 	return nil
-}
+}*/
 
 func _IsVideoCodecReady(in_cv h264parser.CodecData) bool {
 	return in_cv.SPS() != nil && in_cv.PPS() != nil && len(in_cv.SPS()) > 0 && len(in_cv.PPS()) > 0

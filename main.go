@@ -12,35 +12,6 @@ import (
 	"time"
 )
 
-//const serviceName = "rinortsp2web.service"
-//type myService struct{}
-// func (m *myService) Execute(args []string, req <-chan svc.ChangeRequest, status chan<- svc.Status) (svcSpecificEC bool, exitCode uint32) {
-// 	status <- svc.Status{State: svc.StartPending}
-
-// 	status <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
-
-// 	go mainWork()
-
-// 	loop := true
-// 	for loop {
-// 		select {
-// 		case r := <-req:
-// 			switch r.Cmd {
-// 			case svc.Stop, svc.Shutdown:
-// 				loop = false
-// 				status <- svc.Status{State: svc.StopPending}
-// 			}
-// 		default:
-// 			log.Println("Service is running...")
-// 			time.Sleep(2 * time.Second)
-// 		}
-// 	}
-
-// 	sigs <- syscall.SIGINT
-// 	status <- svc.Status{State: svc.Stopped}
-// 	return
-// }
-
 //////////////////////////////
 
 var gSigs chan os.Signal

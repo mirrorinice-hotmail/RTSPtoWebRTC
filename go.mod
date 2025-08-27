@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/deepch/vdk v0.0.20
 	github.com/gin-gonic/gin v1.9.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/go-version v1.7.0
 	github.com/lib/pq v1.10.9
 	github.com/liip/sheriff v0.12.0

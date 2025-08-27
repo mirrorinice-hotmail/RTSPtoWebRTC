@@ -1,5 +1,7 @@
 package main
 
+//stream.go : rtsp streaming receiver
+
 import (
 	"errors"
 	"log"
@@ -36,6 +38,7 @@ func RTSPWorker(msgStop <-chan struct{}, suuid, url string, OnDemand, DisableAud
 		return err
 	}
 	defer RTSPClient.Close()
+
 	if RTSPClient.CodecData != nil {
 		gStreamListInfo.setCodec(suuid, RTSPClient.CodecData)
 	}
